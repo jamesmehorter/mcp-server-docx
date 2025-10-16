@@ -135,7 +135,8 @@ Paragraph with multiple empty lines above.
     // Find the actual content items
     const heading = result.find(item => item.type === 'heading');
     const paragraph = result.find(
-      item => item.type === 'paragraph' && item.text === 'Paragraph with multiple empty lines above.'
+      item =>
+        item.type === 'paragraph' && item.text === 'Paragraph with multiple empty lines above.'
     );
     const list = result.find(item => item.type === 'bullets');
 

@@ -562,17 +562,14 @@ export class DocumentManager {
   /**
    * Apply style configuration to parsed markdown content
    */
-  private applyStylesToContent(
-    content: ContentItem[],
-    styles: MarkdownStyles
-  ): ContentItem[] {
-    return content.map((item) => {
+  private applyStylesToContent(content: ContentItem[], styles: MarkdownStyles): ContentItem[] {
+    return content.map(item => {
       const type = item.type || 'paragraph';
       let elementStyle;
 
       // Determine which style to apply based on content type
       switch (type) {
-        case 'heading':
+        case 'heading': {
           // Map heading level to style
           const level = item.format?.level || 1;
           if (level === 1) elementStyle = styles.heading1;
@@ -580,6 +577,7 @@ export class DocumentManager {
           else if (level === 3) elementStyle = styles.heading3;
           else if (level === 4) elementStyle = styles.heading4;
           break;
+        }
         case 'paragraph':
           // Check if this is a blockquote (italic paragraph from markdown)
           if (item.format?.italic) {

@@ -104,6 +104,7 @@ Key achievements:
 ```
 
 **What you get:**
+
 - ✅ Professional Word document in ~300ms
 - ✅ Proper heading styles with borders (H1, H2)
 - ✅ Bold and italic formatting
@@ -114,6 +115,7 @@ Key achievements:
 - ✅ Times New Roman font (professional default)
 
 **Supported Markdown:**
+
 - `#` `##` `###` Headings (H1/H2 get bottom borders)
 - `**bold**` and `*italic*` inline formatting
 - `-` or `*` for bullet lists
@@ -155,6 +157,7 @@ Use these custom styles:
 - `blockquote` - Block quote text (from `> quote`)
 
 **Each element can have:**
+
 - `fontName` - Font family (e.g., "Helvetica", "Arial", "Times New Roman")
 - `fontSize` - Font size in points (e.g., 12, 14, 36)
 - `bold` - Bold text (true/false)
@@ -177,6 +180,7 @@ styles: {
 ```
 
 **Default styles** (used when you don't provide custom styles):
+
 - Headings: Times New Roman, bold, H1=24pt, H2=18pt, H3/H4=14/12pt
 - H1/H2: Bottom borders, H3/H4: No borders
 - Paragraphs/Lists: Times New Roman, 12pt
@@ -207,28 +211,29 @@ Add bullet points for my skills in Times New Roman 12pt.
 ```typescript
 content: [
   {
-    text: 'JANE SMITH',  // defaults to paragraph type
-    format: { fontName: 'Helvetica', fontSize: 36, bold: true }
+    text: 'JANE SMITH', // defaults to paragraph type
+    format: { fontName: 'Helvetica', fontSize: 36, bold: true },
   },
-  { text: '' },  // empty paragraph for spacing
+  { text: '' }, // empty paragraph for spacing
   {
     type: 'heading',
     text: 'PROFESSIONAL SUMMARY',
-    format: { level: 2, borderBottom: true }
+    format: { level: 2, borderBottom: true },
   },
   {
     text: 'Software engineer with 10+ years experience...',
-    format: { fontName: 'Times New Roman', fontSize: 12 }
+    format: { fontName: 'Times New Roman', fontSize: 12 },
   },
   {
     type: 'bullets',
     items: ['TypeScript & React', 'Node.js & Python', 'AWS & Docker'],
-    format: { fontName: 'Times New Roman', fontSize: 12 }
-  }
-]
+    format: { fontName: 'Times New Roman', fontSize: 12 },
+  },
+];
 ```
 
 **Content item options:**
+
 - `type`: `'paragraph'` (default), `'heading'`, `'bullets'`, `'ordered'`
 - `text`: For paragraphs and headings (use `''` for spacing)
 - `items`: Array of strings for lists
@@ -288,6 +293,7 @@ npm run test:ui       # Visual UI mode
 ```
 
 **Test coverage:**
+
 - Markdown parsing (headings, lists, block quotes, horizontal rules, inline formatting)
 - Auto-session creation
 - Paragraph, heading, and list formatting
@@ -310,6 +316,7 @@ npm run ci           # Run all checks (lint + format + test + typecheck)
 ```
 
 **Standards:**
+
 - TypeScript with strict mode
 - ESLint (no warnings allowed)
 - Prettier (single quotes, 2-space indent, 100 char width)
@@ -339,6 +346,7 @@ mcp-server-docx/
 ## Performance & Architecture
 
 **Key Performance Metrics:**
+
 - Single document creation: ~300ms
 - Full resume (batch mode): ~300ms vs 3-5s (incremental) vs ~35s (Python)
 - **100x faster** than Python implementation
@@ -367,3 +375,16 @@ ISC
 ## Author
 
 James Mehorter
+
+---
+
+## Acknowledgments
+
+This project is built on the excellent [docx](https://docx.js.org) library by Dolan Miu.
+
+**[docx.js.org](https://docx.js.org)** | **[GitHub](https://github.com/dolanmiu/docx)** - A powerful library for generating Word documents (.docx files) in JavaScript/TypeScript. This MCP server wouldn't be possible without the solid foundation that docx provides for creating and manipulating Office Open XML documents.
+
+Thanks to:
+- **Dolan Miu** and all contributors to the [docx library](https://github.com/dolanmiu/docx)
+- The **Anthropic team** for building the Model Context Protocol and Claude Code
+- The **open source community** for making tools like this possible

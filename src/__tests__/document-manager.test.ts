@@ -375,7 +375,13 @@ Paragraph text here.`;
         },
       };
 
-      await docManager.createDocumentFromMarkdown(testFile, markdown, 'Test Doc', 'Test Author', customStyles);
+      await docManager.createDocumentFromMarkdown(
+        testFile,
+        markdown,
+        'Test Doc',
+        'Test Author',
+        customStyles
+      );
       await docManager.saveDocument(testFile);
 
       const stats = await fs.stat(testFile);
@@ -406,7 +412,13 @@ Paragraph text here.`;
         },
       };
 
-      await docManager.createDocumentFromMarkdown(testFile, markdown, undefined, undefined, customStyles);
+      await docManager.createDocumentFromMarkdown(
+        testFile,
+        markdown,
+        undefined,
+        undefined,
+        customStyles
+      );
       await docManager.saveDocument(testFile);
 
       const stats = await fs.stat(testFile);
@@ -428,7 +440,13 @@ Regular paragraph after quote.`;
         },
       };
 
-      await docManager.createDocumentFromMarkdown(testFile, markdown, undefined, undefined, customStyles);
+      await docManager.createDocumentFromMarkdown(
+        testFile,
+        markdown,
+        undefined,
+        undefined,
+        customStyles
+      );
       await docManager.saveDocument(testFile);
 
       const stats = await fs.stat(testFile);
@@ -454,7 +472,13 @@ Paragraph text.`;
         },
       };
 
-      await docManager.createDocumentFromMarkdown(testFile, markdown, undefined, undefined, customStyles);
+      await docManager.createDocumentFromMarkdown(
+        testFile,
+        markdown,
+        undefined,
+        undefined,
+        customStyles
+      );
       await docManager.saveDocument(testFile);
 
       const stats = await fs.stat(testFile);
