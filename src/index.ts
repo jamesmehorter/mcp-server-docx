@@ -117,7 +117,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 properties: {
                   type: {
                     type: 'string',
-                    enum: ['paragraph', 'heading', 'bullets'],
+                    enum: ['paragraph', 'heading', 'bullets', 'ordered'],
                     description: 'Type of content item',
                   },
                   text: { type: 'string', description: 'Text content (for paragraph and heading)' },
@@ -150,6 +150,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
           },
           required: ['filename', 'content'],
+        },
+      },
+      {
+        name: 'create_document_from_markdown',
+        description:
+          '🚀 RECOMMENDED: Create a Word document from markdown text (MOST INTUITIVE - just write natural markdown!)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            filename: { type: 'string', description: 'Path to save the document' },
+            markdown: {
+              type: 'string',
+              description:
+                'Markdown text supporting headings (# ## ###), paragraphs, lists (- or 1.), and inline formatting (**bold**, *italic*)',
+            },
+            title: { type: 'string', description: 'Document title' },
+            author: { type: 'string', description: 'Document author' },
+          },
+          required: ['filename', 'markdown'],
         },
       },
     ],
@@ -229,6 +248,22 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         );
         return {
           content: [{ type: 'text', text: `Document created and saved: ${args.filename}` }],
+        };
+
+      case 'create_document_from_markdown':
+        await docManager.createDocumentFromMarkdown(
+          args.filename as string,
+          args.markdown as string,
+          args.title as string | undefined,
+          args.author as string | undefined
+        );
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✓ Document created from markdown and saved: ${args.filename}`,
+            },
+          ],
         };
 
       default:

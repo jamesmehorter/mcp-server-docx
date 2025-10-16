@@ -2,6 +2,36 @@
 
 A fast, TypeScript-based MCP server for Word document generation that outperforms Python implementations by 10x.
 
+**🚀 Now with Markdown-First Workflow** - Just write natural markdown and get professional Word documents!
+
+## Quick Example
+
+```markdown
+Create a Word document at /tmp/resume.docx from this markdown:
+
+## Professional Summary
+
+I am a **senior engineer** with _10+ years_ of experience.
+
+## Skills
+
+- TypeScript & React
+- Node.js & Python
+- AWS & Docker
+
+## Experience
+
+### Senior Engineer at Tech Corp
+
+Key achievements:
+
+1. Built microservices architecture
+2. Reduced latency by 40%
+3. Mentored team of 5 engineers
+```
+
+**Result:** Professional Word document with proper formatting in ~300ms!
+
 ## Performance
 
 - **Target:** <300ms per MCP call (vs 1-2s in Python)
@@ -10,15 +40,18 @@ A fast, TypeScript-based MCP server for Word document generation that outperform
 
 ## Features
 
-- **Batch Operation:** Create complete documents in a single MCP call (1 call vs 20-30)
-- **Auto-Session Creation:** No need to explicitly create documents - sessions auto-create when adding content
+- **🎯 Markdown-First:** Write natural markdown → Get formatted Word documents
+- **📝 Full Markdown Support:** Headings (`# ## ###`), lists (`-` or `1.`), inline formatting (`**bold**`, `*italic*`)
+- **⚡ Batch Operation:** Create complete documents in a single MCP call (1 call vs 20-30)
+- **🤖 Auto-Session Creation:** No need to explicitly create documents - sessions auto-create when adding content
+- **🎨 Smart Defaults:** Automatically applies Times New Roman font when not specified
 - Create Word documents with custom metadata (title, author)
 - Add formatted paragraphs (font, size, bold, italic, color)
 - Add headings with optional borders (levels 1-9)
-- Add bulleted lists
+- Add bulleted and numbered lists
 - In-memory document management for fast operations
 - Save documents only when needed
-- Comprehensive test suite with 21 passing tests
+- Comprehensive test suite with 32 passing tests
 
 ## Installation
 
@@ -29,7 +62,7 @@ npm run build
 
 ## Testing
 
-Comprehensive test suite with 21 tests powered by **Vitest** (fast, modern, ESM-native):
+Comprehensive test suite with 32 tests powered by **Vitest** (fast, modern, ESM-native):
 
 ```bash
 npm test              # Run tests once
@@ -40,13 +73,14 @@ npm run test:ui       # Visual UI mode
 
 The test suite validates:
 
+- Markdown parsing (headings, lists, inline formatting)
 - Auto-session creation
-- Paragraph, heading, and bullet list formatting
+- Paragraph, heading, and list formatting (bullets and numbered)
 - Batch document creation
 - Error handling
 - Complex multi-section documents
 
-**Performance:** All 21 tests complete in ~350ms (2x faster than Jest)
+**Performance:** All 32 tests complete in ~400ms (2x faster than Jest)
 
 ## Code Quality
 
@@ -127,20 +161,92 @@ Quit and reopen Claude Desktop to load the new MCP server.
 
 In Claude Desktop, you should now see the Word Document Server tools available:
 
+- `create_document_from_markdown` 🚀 **MOST RECOMMENDED - Write natural markdown!**
+- `create_document_from_content` ⚡ **RECOMMENDED - Single structured call**
 - `create_document`
 - `add_paragraph`
 - `add_heading`
 - `add_bullet_list`
 - `save_document`
-- `create_document_from_content` ⚡ **RECOMMENDED - Single call for entire document**
 
 ## Available Tools
 
-### create_document_from_content ⚡ RECOMMENDED
+### create_document_from_markdown 🚀 MOST RECOMMENDED
 
-**The fastest way to create documents - use this instead of multiple calls!**
+**The most intuitive way to create documents - just write natural markdown!**
 
-Create a complete Word document in a single MCP call. This is **10x faster** than making multiple individual calls.
+Create a complete Word document from markdown text in a single MCP call. This is the simplest and most intuitive interface - no need to specify types, formats, or structure. Just write markdown like you normally would.
+
+**Parameters:**
+
+- `filename` (required): Path to save the document
+- `markdown` (required): Markdown text content
+- `title` (optional): Document title
+- `author` (optional): Document author
+
+**Supported Markdown:**
+
+- **Headings:** `#` H1, `##` H2, `###` H3, etc. (H1 and H2 get bottom borders)
+- **Paragraphs:** Regular text (becomes formatted paragraphs)
+- **Unordered lists:** Lines starting with `-` or `*`
+- **Ordered lists:** Lines starting with `1.`, `2.`, etc.
+- **Inline formatting:** `**bold**` and `*italic*` in any text
+- **Default font:** Times New Roman (applied automatically)
+
+**Example:**
+
+```typescript
+create_document_from_markdown({
+  filename: '/tmp/resume.docx',
+  title: 'John Doe Resume',
+  author: 'John Doe',
+  markdown: `
+# JOHN DOE
+john@example.com | (555) 123-4567
+
+## Professional Summary
+
+I am a **senior fullstack engineer** with *10+ years* of experience building scalable web applications.
+
+## Skills
+
+- Expert in **TypeScript**, **React**, and **Node.js**
+- Strong experience with **AWS** cloud architecture
+- Passionate about **clean code** and **best practices**
+
+## Work Experience
+
+### Senior Engineer at Tech Corp (2020-Present)
+
+Key achievements:
+
+1. Designed and implemented **microservices architecture**
+2. Reduced system latency by *40%*
+3. Mentored team of 5 junior engineers
+
+### Software Engineer at Startup Inc (2015-2020)
+
+- Built MVP from scratch using **React** and **TypeScript**
+- Implemented REST API with **Express** and **PostgreSQL**
+- Deployed to **AWS** with CI/CD pipeline
+
+## Education
+
+**Bachelor of Science** in Computer Science
+*University of Technology*, 2015
+`,
+});
+```
+
+**Result:** Professional Word document created and saved in ~300ms!
+
+---
+
+### create_document_from_content ⚡ RECOMMENDED (Structured Approach)
+
+**For when you need fine-grained control over formatting**
+
+Create a complete Word document from a structured content array in a single MCP call. This gives you more control over font names, sizes, and colors compared to the markdown approach.
 
 **Parameters:**
 
@@ -153,9 +259,9 @@ Create a complete Word document in a single MCP call. This is **10x faster** tha
 
 ```typescript
 {
-  type: 'paragraph' | 'heading' | 'bullets',
+  type: 'paragraph' | 'heading' | 'bullets' | 'ordered',
   text?: string,              // For paragraph and heading
-  items?: string[],           // For bullets
+  items?: string[],           // For bullets and ordered lists
   format?: {
     fontName?: string,
     fontSize?: number,        // in points
@@ -336,9 +442,51 @@ save_document({
 
 ## Usage Examples
 
-### Fast Mode (Recommended) - Single Batch Call
+### Markdown Mode 🚀 MOST RECOMMENDED - Natural Markdown
 
-Tell Claude to use the batch operation for maximum speed:
+Tell Claude to use the markdown tool with natural markdown syntax:
+
+```
+Create a Word document at /tmp/my-resume.docx from this markdown:
+
+# JANE SMITH
+jane@example.com | (555) 123-4567
+
+## PROFESSIONAL SUMMARY
+
+I am a **software engineer** with *5+ years* of experience building web applications.
+
+## SKILLS
+
+- JavaScript/TypeScript
+- React & Node.js
+- AWS & Docker
+
+## EXPERIENCE
+
+### Senior Engineer at Acme Corp
+
+Key achievements:
+
+1. Built microservices platform
+2. Reduced deployment time by 50%
+3. Mentored junior engineers
+```
+
+**Result:** Professional document created in ~300ms (1 MCP call, zero configuration!)
+
+**Why this is best:**
+
+- ✅ No need to specify types ("paragraph", "heading", "bullets")
+- ✅ No need to configure formatting (font, size, bold)
+- ✅ Just write natural markdown like you already do
+- ✅ Gets proper Word formatting automatically
+
+---
+
+### Structured Mode ⚡ RECOMMENDED - Fine-Grained Control
+
+For when you need specific fonts, sizes, or colors:
 
 ```
 Create a resume for me at /tmp/my-resume.docx using the create_document_from_content tool.
@@ -351,7 +499,7 @@ Include:
 - Bullet points for my key achievements
 ```
 
-**Result:** Document created in ~300ms (1 MCP call)
+**Result:** Document created in ~300ms (1 MCP call, full format control)
 
 ### Incremental Mode - Multiple Calls
 
@@ -377,6 +525,64 @@ Save the document.
 
 **Performance Tip:** Use batch mode whenever possible for 10x faster execution!
 
+## Markdown Formatting Support
+
+All text content (paragraphs, headings, and bullet lists) supports markdown-style formatting that gets automatically converted to proper Word formatting:
+
+- `**bold text**` → **bold text** in Word
+- `*italic text*` → _italic text_ in Word
+
+**Example:**
+
+```typescript
+add_paragraph({
+  filename: '/tmp/resume.docx',
+  text: 'Led **4-engineer team** building *next-gen platform*',
+  font_size: 14,
+});
+```
+
+This creates a paragraph where "4-engineer team" is bold and "next-gen platform" is italic.
+
+**How it works:**
+
+1. The server parses text for `**text**` and `*text*` patterns
+2. Splits text into segments with appropriate formatting flags
+3. Creates multiple TextRun objects in Word with proper bold/italic styling
+4. Combines with any explicit formatting parameters you provide
+
+**Benefits:**
+
+- Claude can use natural markdown syntax in text content
+- No need to create separate paragraphs for differently-formatted text
+- Works seamlessly with explicit `bold` and `italic` format parameters
+
+## Default Font Styling
+
+When no `fontName` is specified, the server automatically applies **Times New Roman** as the default font. This ensures professional-looking documents even when font family isn't explicitly provided.
+
+**Example:**
+
+```typescript
+// This text will use Times New Roman by default
+add_paragraph({
+  filename: '/tmp/resume.docx',
+  text: 'Software engineer with 10+ years experience',
+  font_size: 14,
+});
+```
+
+You can always override the default by specifying a `fontName`:
+
+```typescript
+add_paragraph({
+  filename: '/tmp/resume.docx',
+  text: 'Software engineer with 10+ years experience',
+  font_name: 'Arial',
+  font_size: 14,
+});
+```
+
 ## Architecture
 
 ### Key Design Decisions
@@ -389,12 +595,17 @@ Save the document.
 
 4. **Document Rebuilding**: The docx library requires all content to be known at document creation time. We store content elements and rebuild the document when saving.
 
-5. **Type Safety**: Full TypeScript type definitions ensure correctness and great developer experience.
+5. **Markdown Parsing**: Built-in support for markdown-style formatting (`**bold**`, `*italic*`) allows Claude to use natural syntax without requiring structured formatting parameters. Text is parsed and split into multiple TextRun objects with proper Word formatting.
 
-6. **Performance First**: Every operation is optimized for speed:
+6. **Smart Defaults**: Automatically applies Times New Roman font when not specified, ensuring professional-looking documents even when explicit font parameters aren't provided.
+
+7. **Type Safety**: Full TypeScript type definitions ensure correctness and great developer experience.
+
+8. **Performance First**: Every operation is optimized for speed:
    - No unnecessary file operations
    - Minimal object allocations
    - Efficient paragraph array management
+   - Single-pass markdown parsing
 
 ## Project Structure
 

@@ -7,8 +7,65 @@ import {
   IRunOptions,
   IParagraphOptions,
   BorderStyle,
+  AlignmentType,
+  LevelFormat,
 } from 'docx';
 import * as fs from 'fs/promises';
+
+interface TextSegment {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+}
+
+/**
+ * Parse markdown-style formatting (**bold**, *italic*) and convert to text segments
+ */
+function parseMarkdownFormatting(text: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  let currentPos = 0;
+
+  // Regex to match **bold** or *italic* (non-greedy)
+  // Matches: **text** or *text* but not *** or ****
+  const regex = /(\*\*([^*]+?)\*\*)|(\*([^*]+?)\*)/g;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add plain text before this match
+    if (match.index > currentPos) {
+      segments.push({
+        text: text.substring(currentPos, match.index),
+      });
+    }
+
+    // Add formatted text
+    if (match[1]) {
+      // **bold**
+      segments.push({
+        text: match[2],
+        bold: true,
+      });
+    } else if (match[3]) {
+      // *italic*
+      segments.push({
+        text: match[4],
+        italic: true,
+      });
+    }
+
+    currentPos = match.index + match[0].length;
+  }
+
+  // Add remaining plain text
+  if (currentPos < text.length) {
+    segments.push({
+      text: text.substring(currentPos),
+    });
+  }
+
+  // If no markdown found, return the whole text as one segment
+  return segments.length > 0 ? segments : [{ text }];
+}
 
 interface DocumentSession {
   title?: string;
@@ -17,7 +74,7 @@ interface DocumentSession {
 }
 
 export interface ContentItem {
-  type: 'paragraph' | 'heading' | 'bullets';
+  type: 'paragraph' | 'heading' | 'bullets' | 'ordered';
   text?: string;
   items?: string[];
   format?: {
@@ -76,6 +133,26 @@ export class DocumentManager {
       creator: session.author || 'Word MCP Server',
       title: session.title || 'Document',
       description: 'Generated via Node.js Word MCP Server',
+      numbering: {
+        config: [
+          {
+            reference: 'default-numbering',
+            levels: [
+              {
+                level: 0,
+                format: LevelFormat.DECIMAL,
+                text: '%1.',
+                alignment: AlignmentType.LEFT,
+                style: {
+                  paragraph: {
+                    indent: { left: 720, hanging: 260 },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
       sections: [
         {
           properties: {
@@ -97,6 +174,7 @@ export class DocumentManager {
   /**
    * Add a paragraph with formatting
    * Auto-creates session if it doesn't exist
+   * Supports markdown-style formatting: **bold**, *italic*
    */
   async addParagraph(
     filename: string,
@@ -111,17 +189,24 @@ export class DocumentManager {
   ): Promise<void> {
     const session = this.getOrCreateSession(filename);
 
-    const runOptions: IRunOptions = {
-      text,
-      font: format?.fontName,
-      size: format?.fontSize ? format.fontSize * 2 : undefined, // Convert points to half-points
-      bold: format?.bold,
-      italics: format?.italic, // Note: it's 'italics' not 'italic' in docx
-      color: format?.color,
-    };
+    // Parse markdown formatting in text
+    const segments = parseMarkdownFormatting(text);
+
+    // Create TextRun for each segment
+    const textRuns = segments.map(segment => {
+      const runOptions: IRunOptions = {
+        text: segment.text,
+        font: format?.fontName || 'Times New Roman', // Default to Times New Roman if not specified
+        size: format?.fontSize ? format.fontSize * 2 : undefined, // Convert points to half-points
+        bold: format?.bold || segment.bold, // Apply markdown bold or format bold
+        italics: format?.italic || segment.italic, // Apply markdown italic or format italic
+        color: format?.color,
+      };
+      return new TextRun(runOptions);
+    });
 
     const paragraph = new Paragraph({
-      children: [new TextRun(runOptions)],
+      children: textRuns,
     });
 
     session.children.push(paragraph);
@@ -130,6 +215,7 @@ export class DocumentManager {
   /**
    * Add a heading with formatting and optional border
    * Auto-creates session if it doesn't exist
+   * Supports markdown-style formatting: **bold**, *italic*
    */
   async addHeading(
     filename: string,
@@ -147,16 +233,24 @@ export class DocumentManager {
     const level = options?.level || 1;
     const headingLevel = HeadingLevel[`HEADING_${level}` as keyof typeof HeadingLevel];
 
-    const runOptions: IRunOptions = {
-      text,
-      font: options?.fontName,
-      size: options?.fontSize ? options.fontSize * 2 : undefined,
-      bold: options?.bold ?? true, // Default headings to bold
-    };
+    // Parse markdown formatting in text
+    const segments = parseMarkdownFormatting(text);
+
+    // Create TextRun for each segment
+    const textRuns = segments.map(segment => {
+      const runOptions: IRunOptions = {
+        text: segment.text,
+        font: options?.fontName || 'Times New Roman',
+        size: options?.fontSize ? options.fontSize * 2 : undefined,
+        bold: (options?.bold ?? true) || segment.bold, // Default headings to bold
+        italics: segment.italic,
+      };
+      return new TextRun(runOptions);
+    });
 
     const paragraphOptions: IParagraphOptions = {
       heading: headingLevel,
-      children: [new TextRun(runOptions)],
+      children: textRuns,
       // Add border if requested
       ...(options?.borderBottom && {
         border: {
@@ -178,6 +272,7 @@ export class DocumentManager {
   /**
    * Add a bulleted list
    * Auto-creates session if it doesn't exist
+   * Supports markdown-style formatting: **bold**, *italic*
    */
   async addBulletList(
     filename: string,
@@ -190,14 +285,23 @@ export class DocumentManager {
     const session = this.getOrCreateSession(filename);
 
     const bullets = items.map(item => {
-      const runOptions: IRunOptions = {
-        text: item,
-        font: format?.fontName,
-        size: format?.fontSize ? format.fontSize * 2 : undefined,
-      };
+      // Parse markdown formatting in each bullet item
+      const segments = parseMarkdownFormatting(item);
+
+      // Create TextRun for each segment
+      const textRuns = segments.map(segment => {
+        const runOptions: IRunOptions = {
+          text: segment.text,
+          font: format?.fontName || 'Times New Roman',
+          size: format?.fontSize ? format.fontSize * 2 : undefined,
+          bold: segment.bold,
+          italics: segment.italic,
+        };
+        return new TextRun(runOptions);
+      });
 
       return new Paragraph({
-        children: [new TextRun(runOptions)],
+        children: textRuns,
         bullet: {
           level: 0,
         },
@@ -205,6 +309,49 @@ export class DocumentManager {
     });
 
     session.children.push(...bullets);
+  }
+
+  /**
+   * Add an ordered (numbered) list
+   * Auto-creates session if it doesn't exist
+   * Supports markdown-style formatting: **bold**, *italic*
+   */
+  async addOrderedList(
+    filename: string,
+    items: string[],
+    format?: {
+      fontName?: string;
+      fontSize?: number;
+    }
+  ): Promise<void> {
+    const session = this.getOrCreateSession(filename);
+
+    const orderedItems = items.map(item => {
+      // Parse markdown formatting in each item
+      const segments = parseMarkdownFormatting(item);
+
+      // Create TextRun for each segment
+      const textRuns = segments.map(segment => {
+        const runOptions: IRunOptions = {
+          text: segment.text,
+          font: format?.fontName || 'Times New Roman',
+          size: format?.fontSize ? format.fontSize * 2 : undefined,
+          bold: segment.bold,
+          italics: segment.italic,
+        };
+        return new TextRun(runOptions);
+      });
+
+      return new Paragraph({
+        children: textRuns,
+        numbering: {
+          reference: 'default-numbering',
+          level: 0,
+        },
+      });
+    });
+
+    session.children.push(...orderedItems);
   }
 
   /**
@@ -281,10 +428,59 @@ export class DocumentManager {
             });
           }
           break;
+
+        case 'ordered':
+          if (item.items && item.items.length > 0) {
+            await this.addOrderedList(filename, item.items, {
+              fontName: item.format?.fontName,
+              fontSize: item.format?.fontSize,
+            });
+          }
+          break;
       }
     }
 
     // Save document
     await this.saveDocument(filename);
+  }
+
+  /**
+   * Create a complete document from markdown text in a single operation
+   * This is the most intuitive way to create documents - just write natural markdown!
+   *
+   * Supports:
+   * - Headings: # H1, ## H2, ### H3, etc.
+   * - Paragraphs: regular text
+   * - Unordered lists: - item or * item
+   * - Ordered lists: 1. item, 2. item, etc.
+   * - Inline formatting: **bold**, *italic*
+   *
+   * Example:
+   * ```
+   * ## Summary
+   *
+   * I am a **senior engineer** with *extensive experience*.
+   *
+   * - First achievement
+   * - Second achievement
+   *
+   * 1. First step
+   * 2. Second step
+   * ```
+   */
+  async createDocumentFromMarkdown(
+    filename: string,
+    markdown: string,
+    title?: string,
+    author?: string
+  ): Promise<void> {
+    // Lazy import to avoid circular dependency issues
+    const { parseMarkdown } = await import('./markdown-parser.js');
+
+    // Parse markdown into content items
+    const content = parseMarkdown(markdown);
+
+    // Use existing batch operation
+    await this.createDocumentFromContent(filename, content, title, author);
   }
 }
