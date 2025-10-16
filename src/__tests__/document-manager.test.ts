@@ -13,7 +13,7 @@ describe('DocumentManager', () => {
     // Clean up test files
     try {
       await fs.unlink(testFile);
-    } catch (error) {
+    } catch (_error) {
       // Ignore if file doesn't exist
     }
   });
@@ -23,26 +23,20 @@ describe('DocumentManager', () => {
       await docManager.createDocument(testFile, 'Test Title', 'Test Author');
 
       // Should not throw when adding content
-      await expect(
-        docManager.addParagraph(testFile, 'Test paragraph')
-      ).resolves.not.toThrow();
+      await expect(docManager.addParagraph(testFile, 'Test paragraph')).resolves.not.toThrow();
     });
 
     test('should create document without title and author', async () => {
       await docManager.createDocument(testFile);
 
-      await expect(
-        docManager.addParagraph(testFile, 'Test paragraph')
-      ).resolves.not.toThrow();
+      await expect(docManager.addParagraph(testFile, 'Test paragraph')).resolves.not.toThrow();
     });
   });
 
   describe('addParagraph', () => {
     test('should auto-create session if not exists', async () => {
       // Should not throw even without calling createDocument first
-      await expect(
-        docManager.addParagraph(testFile, 'Test paragraph')
-      ).resolves.not.toThrow();
+      await expect(docManager.addParagraph(testFile, 'Test paragraph')).resolves.not.toThrow();
     });
 
     test('should add paragraph with formatting', async () => {
@@ -51,7 +45,7 @@ describe('DocumentManager', () => {
         fontSize: 14,
         bold: true,
         italic: true,
-        color: 'FF0000'
+        color: 'FF0000',
       });
 
       // Should be able to save without errors
@@ -76,9 +70,7 @@ describe('DocumentManager', () => {
 
   describe('addHeading', () => {
     test('should auto-create session if not exists', async () => {
-      await expect(
-        docManager.addHeading(testFile, 'Test Heading')
-      ).resolves.not.toThrow();
+      await expect(docManager.addHeading(testFile, 'Test Heading')).resolves.not.toThrow();
     });
 
     test('should add heading with default level', async () => {
@@ -95,7 +87,7 @@ describe('DocumentManager', () => {
         fontName: 'Helvetica',
         fontSize: 16,
         bold: true,
-        borderBottom: true
+        borderBottom: true,
       });
 
       await docManager.saveDocument(testFile);
@@ -118,17 +110,11 @@ describe('DocumentManager', () => {
 
   describe('addBulletList', () => {
     test('should auto-create session if not exists', async () => {
-      await expect(
-        docManager.addBulletList(testFile, ['Item 1', 'Item 2'])
-      ).resolves.not.toThrow();
+      await expect(docManager.addBulletList(testFile, ['Item 1', 'Item 2'])).resolves.not.toThrow();
     });
 
     test('should add bullet list with items', async () => {
-      await docManager.addBulletList(testFile, [
-        'First item',
-        'Second item',
-        'Third item'
-      ]);
+      await docManager.addBulletList(testFile, ['First item', 'Second item', 'Third item']);
 
       await docManager.saveDocument(testFile);
 
@@ -137,14 +123,10 @@ describe('DocumentManager', () => {
     });
 
     test('should add bullet list with formatting', async () => {
-      await docManager.addBulletList(
-        testFile,
-        ['Formatted item 1', 'Formatted item 2'],
-        {
-          fontName: 'Times New Roman',
-          fontSize: 12
-        }
-      );
+      await docManager.addBulletList(testFile, ['Formatted item 1', 'Formatted item 2'], {
+        fontName: 'Times New Roman',
+        fontSize: 12,
+      });
 
       await docManager.saveDocument(testFile);
 
@@ -165,9 +147,9 @@ describe('DocumentManager', () => {
     });
 
     test('should throw error if session does not exist', async () => {
-      await expect(
-        docManager.saveDocument('/tmp/nonexistent.docx')
-      ).rejects.toThrow('No document session found');
+      await expect(docManager.saveDocument('/tmp/nonexistent.docx')).rejects.toThrow(
+        'No document session found'
+      );
     });
   });
 
@@ -182,9 +164,7 @@ describe('DocumentManager', () => {
       expect(stats.size).toBeGreaterThan(0);
 
       // Should throw error if trying to add content after closing
-      await expect(
-        docManager.saveDocument(testFile)
-      ).rejects.toThrow('No document session found');
+      await expect(docManager.saveDocument(testFile)).rejects.toThrow('No document session found');
     });
   });
 
@@ -198,9 +178,7 @@ describe('DocumentManager', () => {
       await expect(fs.stat(testFile)).rejects.toThrow();
 
       // Session should be gone
-      await expect(
-        docManager.saveDocument(testFile)
-      ).rejects.toThrow('No document session found');
+      await expect(docManager.saveDocument(testFile)).rejects.toThrow('No document session found');
     });
   });
 
@@ -210,30 +188,25 @@ describe('DocumentManager', () => {
         {
           type: 'paragraph',
           text: 'JOHN DOE',
-          format: { fontName: 'Helvetica', fontSize: 36, bold: true }
+          format: { fontName: 'Helvetica', fontSize: 36, bold: true },
         },
         {
           type: 'heading',
           text: 'PROFESSIONAL SUMMARY',
-          format: { level: 2, borderBottom: true }
+          format: { level: 2, borderBottom: true },
         },
         {
           type: 'paragraph',
-          text: 'Software engineer with 10+ years experience.'
+          text: 'Software engineer with 10+ years experience.',
         },
         {
           type: 'bullets',
           items: ['Led team of 4 engineers', 'Built scalable systems', 'Optimized performance'],
-          format: { fontName: 'Times New Roman', fontSize: 14 }
-        }
+          format: { fontName: 'Times New Roman', fontSize: 14 },
+        },
       ];
 
-      await docManager.createDocumentFromContent(
-        testFile,
-        content,
-        'John Doe Resume',
-        'John Doe'
-      );
+      await docManager.createDocumentFromContent(testFile, content, 'John Doe Resume', 'John Doe');
 
       // Verify file was created and saved
       const stats = await fs.stat(testFile);
@@ -254,7 +227,7 @@ describe('DocumentManager', () => {
         { type: 'paragraph', text: 'Paragraph 2' },
         { type: 'bullets', items: ['Item 1', 'Item 2'] },
         { type: 'heading', text: 'Section 2', format: { level: 2 } },
-        { type: 'paragraph', text: 'Paragraph 3' }
+        { type: 'paragraph', text: 'Paragraph 3' },
       ];
 
       await docManager.createDocumentFromContent(testFile, content);
@@ -269,12 +242,10 @@ describe('DocumentManager', () => {
         { type: 'paragraph' }, // Missing text - should skip
         { type: 'heading' }, // Missing text - should skip
         { type: 'bullets', items: [] }, // Empty items - should skip
-        { type: 'bullets', items: ['Valid item'] }
+        { type: 'bullets', items: ['Valid item'] },
       ];
 
-      await expect(
-        docManager.createDocumentFromContent(testFile, content)
-      ).resolves.not.toThrow();
+      await expect(docManager.createDocumentFromContent(testFile, content)).resolves.not.toThrow();
 
       const stats = await fs.stat(testFile);
       expect(stats.size).toBeGreaterThan(0);
@@ -290,13 +261,13 @@ describe('DocumentManager', () => {
       await docManager.addParagraph(testFile, 'JANE SMITH', {
         fontName: 'Helvetica',
         fontSize: 36,
-        bold: true
+        bold: true,
       });
 
       // Contact info
       await docManager.addParagraph(testFile, 'jane@example.com | (555) 123-4567', {
         fontName: 'Helvetica',
-        fontSize: 12
+        fontSize: 12,
       });
 
       // Summary heading
@@ -304,11 +275,12 @@ describe('DocumentManager', () => {
         level: 2,
         fontName: 'Helvetica',
         fontSize: 14,
-        borderBottom: true
+        borderBottom: true,
       });
 
       // Summary paragraph
-      await docManager.addParagraph(testFile,
+      await docManager.addParagraph(
+        testFile,
         'Experienced software engineer specializing in full-stack development with expertise in TypeScript, React, and Node.js.',
         { fontName: 'Times New Roman', fontSize: 14 }
       );
@@ -318,25 +290,29 @@ describe('DocumentManager', () => {
         level: 2,
         fontName: 'Helvetica',
         fontSize: 14,
-        borderBottom: true
+        borderBottom: true,
       });
 
       // Job title
       await docManager.addParagraph(testFile, 'Senior Software Engineer - Tech Corp', {
         fontName: 'Times New Roman',
         fontSize: 14,
-        bold: true
+        bold: true,
       });
 
       // Achievements
-      await docManager.addBulletList(testFile, [
-        'Led development of microservices architecture',
-        'Improved system performance by 40%',
-        'Mentored junior developers'
-      ], {
-        fontName: 'Times New Roman',
-        fontSize: 14
-      });
+      await docManager.addBulletList(
+        testFile,
+        [
+          'Led development of microservices architecture',
+          'Improved system performance by 40%',
+          'Mentored junior developers',
+        ],
+        {
+          fontName: 'Times New Roman',
+          fontSize: 14,
+        }
+      );
 
       await docManager.saveDocument(testFile);
 

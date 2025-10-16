@@ -1,9 +1,3 @@
-export interface DocumentSession {
-  filename: string;
-  doc: any; // docx Document instance
-  createdAt: Date;
-}
-
 export interface ParagraphFormat {
   fontName?: string;
   fontSize?: number; // in points

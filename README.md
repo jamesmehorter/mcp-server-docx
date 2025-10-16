@@ -39,6 +39,7 @@ npm run test:ui       # Visual UI mode
 ```
 
 The test suite validates:
+
 - Auto-session creation
 - Paragraph, heading, and bullet list formatting
 - Batch document creation
@@ -46,6 +47,46 @@ The test suite validates:
 - Complex multi-section documents
 
 **Performance:** All 21 tests complete in ~350ms (2x faster than Jest)
+
+## Code Quality
+
+This project enforces code quality with **ESLint**, **Prettier**, and **TypeScript**:
+
+```bash
+npm run lint         # Run ESLint (fails on warnings)
+npm run lint:fix     # Auto-fix linting issues
+npm run format       # Format code with Prettier
+npm run format:check # Check formatting (CI)
+npm run typecheck    # TypeScript type checking
+npm run ci           # Run all checks (typecheck + lint + format + test)
+```
+
+**Prettier** configuration:
+
+- Single quotes
+- 2-space indentation
+- 100 character line width
+- Trailing commas (ES5)
+- Semicolons
+
+**ESLint** rules:
+
+- TypeScript-specific linting
+- No unused variables (prefix with `_` to ignore)
+- Prefer explicit types over `any` (warning)
+- Integrated with Prettier
+
+### GitHub Actions CI
+
+Pull requests automatically run:
+
+- ✅ TypeScript type checking
+- ✅ ESLint (max 0 warnings)
+- ✅ Prettier formatting check
+- ✅ All 21 tests
+- ✅ Build verification
+
+**PRs cannot be merged until all checks pass.**
 
 ## Claude Desktop Integration
 
@@ -85,6 +126,7 @@ Quit and reopen Claude Desktop to load the new MCP server.
 ### 4. Verify installation
 
 In Claude Desktop, you should now see the Word Document Server tools available:
+
 - `create_document`
 - `add_paragraph`
 - `add_heading`
@@ -101,12 +143,14 @@ In Claude Desktop, you should now see the Word Document Server tools available:
 Create a complete Word document in a single MCP call. This is **10x faster** than making multiple individual calls.
 
 **Parameters:**
+
 - `filename` (required): Path to save the document
 - `content` (required): Array of content items
 - `title` (optional): Document title
 - `author` (optional): Document author
 
 **Content Item Structure:**
+
 ```typescript
 {
   type: 'paragraph' | 'heading' | 'bullets',
@@ -125,43 +169,44 @@ Create a complete Word document in a single MCP call. This is **10x faster** tha
 ```
 
 **Example - Complete Resume in ONE Call:**
+
 ```typescript
 create_document_from_content({
-  filename: "/tmp/resume.docx",
-  title: "John Doe Resume",
-  author: "John Doe",
+  filename: '/tmp/resume.docx',
+  title: 'John Doe Resume',
+  author: 'John Doe',
   content: [
     {
-      type: "paragraph",
-      text: "JOHN DOE",
-      format: { fontName: "Helvetica", fontSize: 36, bold: true }
+      type: 'paragraph',
+      text: 'JOHN DOE',
+      format: { fontName: 'Helvetica', fontSize: 36, bold: true },
     },
     {
-      type: "heading",
-      text: "PROFESSIONAL SUMMARY",
-      format: { level: 2, fontName: "Helvetica", fontSize: 14, borderBottom: true }
+      type: 'heading',
+      text: 'PROFESSIONAL SUMMARY',
+      format: { level: 2, fontName: 'Helvetica', fontSize: 14, borderBottom: true },
     },
     {
-      type: "paragraph",
-      text: "Software engineer with 10+ years experience building scalable systems.",
-      format: { fontName: "Times New Roman", fontSize: 14 }
+      type: 'paragraph',
+      text: 'Software engineer with 10+ years experience building scalable systems.',
+      format: { fontName: 'Times New Roman', fontSize: 14 },
     },
     {
-      type: "heading",
-      text: "EXPERIENCE",
-      format: { level: 2, borderBottom: true }
+      type: 'heading',
+      text: 'EXPERIENCE',
+      format: { level: 2, borderBottom: true },
     },
     {
-      type: "bullets",
+      type: 'bullets',
       items: [
-        "Led 4-engineer team building next-gen platform",
-        "Architected React-based component library",
-        "Built high-scale PostgreSQL systems handling 100M+ records"
+        'Led 4-engineer team building next-gen platform',
+        'Architected React-based component library',
+        'Built high-scale PostgreSQL systems handling 100M+ records',
       ],
-      format: { fontName: "Times New Roman", fontSize: 14 }
-    }
-  ]
-})
+      format: { fontName: 'Times New Roman', fontSize: 14 },
+    },
+  ],
+});
 ```
 
 **Result:** Document created and saved in ~300ms (vs 5-10 seconds with multiple calls)
@@ -177,17 +222,19 @@ create_document_from_content({
 Create a new Word document (optional - sessions auto-create).
 
 **Parameters:**
+
 - `filename` (required): Path to save the document
 - `title` (optional): Document title
 - `author` (optional): Document author
 
 **Example:**
+
 ```typescript
 create_document({
-  filename: "/tmp/resume.docx",
-  title: "My Resume",
-  author: "John Doe"
-})
+  filename: '/tmp/resume.docx',
+  title: 'My Resume',
+  author: 'John Doe',
+});
 ```
 
 ### add_paragraph
@@ -195,6 +242,7 @@ create_document({
 Add a paragraph with optional formatting.
 
 **Parameters:**
+
 - `filename` (required): Document filename
 - `text` (required): Paragraph text
 - `font_name` (optional): Font family (e.g., "Helvetica", "Times New Roman")
@@ -204,15 +252,16 @@ Add a paragraph with optional formatting.
 - `color` (optional): Hex RGB color (e.g., "FF0000" for red)
 
 **Example:**
+
 ```typescript
 add_paragraph({
-  filename: "/tmp/resume.docx",
-  text: "Software Engineer with 10+ years experience",
-  font_name: "Times New Roman",
+  filename: '/tmp/resume.docx',
+  text: 'Software Engineer with 10+ years experience',
+  font_name: 'Times New Roman',
   font_size: 14,
   bold: false,
-  italic: false
-})
+  italic: false,
+});
 ```
 
 ### add_heading
@@ -220,6 +269,7 @@ add_paragraph({
 Add a heading with optional formatting.
 
 **Parameters:**
+
 - `filename` (required): Document filename
 - `text` (required): Heading text
 - `level` (optional): Heading level 1-9 (default: 1)
@@ -229,16 +279,17 @@ Add a heading with optional formatting.
 - `border_bottom` (optional): Add bottom border
 
 **Example:**
+
 ```typescript
 add_heading({
-  filename: "/tmp/resume.docx",
-  text: "PROFESSIONAL SUMMARY",
+  filename: '/tmp/resume.docx',
+  text: 'PROFESSIONAL SUMMARY',
   level: 2,
-  font_name: "Helvetica",
+  font_name: 'Helvetica',
   font_size: 14,
   bold: true,
-  border_bottom: true
-})
+  border_bottom: true,
+});
 ```
 
 ### add_bullet_list
@@ -246,23 +297,25 @@ add_heading({
 Add a bulleted list.
 
 **Parameters:**
+
 - `filename` (required): Document filename
 - `items` (required): Array of bullet point text
 - `font_name` (optional): Font family
 - `font_size` (optional): Font size in points
 
 **Example:**
+
 ```typescript
 add_bullet_list({
-  filename: "/tmp/resume.docx",
+  filename: '/tmp/resume.docx',
   items: [
-    "Led 4-engineer team",
-    "Architected React platform",
-    "Built high-scale PostgreSQL systems"
+    'Led 4-engineer team',
+    'Architected React platform',
+    'Built high-scale PostgreSQL systems',
   ],
-  font_name: "Times New Roman",
-  font_size: 14
-})
+  font_name: 'Times New Roman',
+  font_size: 14,
+});
 ```
 
 ### save_document
@@ -270,13 +323,15 @@ add_bullet_list({
 Save the document to disk.
 
 **Parameters:**
+
 - `filename` (required): Document filename
 
 **Example:**
+
 ```typescript
 save_document({
-  filename: "/tmp/resume.docx"
-})
+  filename: '/tmp/resume.docx',
+});
 ```
 
 ## Usage Examples
@@ -369,13 +424,13 @@ mcp-server-docx/
 
 ## Performance Comparison
 
-| Metric | Python MCP | Node.js MCP (Incremental) | Node.js MCP (Batch) | Best Improvement |
-|--------|-----------|---------------------------|---------------------|------------------|
-| Startup time | ~200ms | ~50ms | ~50ms | **4x faster** |
-| Per-call latency | 1-2s | 100-300ms | N/A | **5-10x faster** |
-| Full resume (20-30 calls) | ~35s | 3-5s | ~300ms | **100x faster** |
-| Number of MCP calls | 20-30 | 20-30 | 1 | **20-30x fewer** |
-| Memory usage | Higher | Lower | Lower | **More efficient** |
+| Metric                    | Python MCP | Node.js MCP (Incremental) | Node.js MCP (Batch) | Best Improvement   |
+| ------------------------- | ---------- | ------------------------- | ------------------- | ------------------ |
+| Startup time              | ~200ms     | ~50ms                     | ~50ms               | **4x faster**      |
+| Per-call latency          | 1-2s       | 100-300ms                 | N/A                 | **5-10x faster**   |
+| Full resume (20-30 calls) | ~35s       | 3-5s                      | ~300ms              | **100x faster**    |
+| Number of MCP calls       | 20-30      | 20-30                     | 1                   | **20-30x fewer**   |
+| Memory usage              | Higher     | Lower                     | Lower               | **More efficient** |
 
 **Key Insight:** The batch operation (`create_document_from_content`) provides the biggest performance win by reducing 20-30 MCP calls to just 1, resulting in **100x faster** document generation!
 

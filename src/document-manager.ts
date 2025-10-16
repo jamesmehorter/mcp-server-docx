@@ -1,4 +1,13 @@
-import { Document, Paragraph, TextRun, HeadingLevel, Packer, IRunOptions, BorderStyle } from 'docx';
+import {
+  Document,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  Packer,
+  IRunOptions,
+  IParagraphOptions,
+  BorderStyle,
+} from 'docx';
 import * as fs from 'fs/promises';
 
 interface DocumentSession {
@@ -32,7 +41,7 @@ export class DocumentManager {
     this.sessions.set(filename, {
       title,
       author,
-      children: []
+      children: [],
     });
   }
 
@@ -67,19 +76,21 @@ export class DocumentManager {
       creator: session.author || 'Word MCP Server',
       title: session.title || 'Document',
       description: 'Generated via Node.js Word MCP Server',
-      sections: [{
-        properties: {
-          page: {
-            margin: {
-              top: 864, // twips (1/20 point)
-              right: 864,
-              bottom: 864,
-              left: 864
-            }
-          }
+      sections: [
+        {
+          properties: {
+            page: {
+              margin: {
+                top: 864, // twips (1/20 point)
+                right: 864,
+                bottom: 864,
+                left: 864,
+              },
+            },
+          },
+          children: session.children,
         },
-        children: session.children
-      }]
+      ],
     });
   }
 
@@ -106,11 +117,11 @@ export class DocumentManager {
       size: format?.fontSize ? format.fontSize * 2 : undefined, // Convert points to half-points
       bold: format?.bold,
       italics: format?.italic, // Note: it's 'italics' not 'italic' in docx
-      color: format?.color
+      color: format?.color,
     };
 
     const paragraph = new Paragraph({
-      children: [new TextRun(runOptions)]
+      children: [new TextRun(runOptions)],
     });
 
     session.children.push(paragraph);
@@ -140,25 +151,24 @@ export class DocumentManager {
       text,
       font: options?.fontName,
       size: options?.fontSize ? options.fontSize * 2 : undefined,
-      bold: options?.bold ?? true // Default headings to bold
+      bold: options?.bold ?? true, // Default headings to bold
     };
 
-    const paragraphOptions: any = {
+    const paragraphOptions: IParagraphOptions = {
       heading: headingLevel,
-      children: [new TextRun(runOptions)]
+      children: [new TextRun(runOptions)],
+      // Add border if requested
+      ...(options?.borderBottom && {
+        border: {
+          bottom: {
+            color: '000000',
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 6,
+          },
+        },
+      }),
     };
-
-    // Add border if requested
-    if (options?.borderBottom) {
-      paragraphOptions.border = {
-        bottom: {
-          color: '000000',
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 6
-        }
-      };
-    }
 
     const heading = new Paragraph(paragraphOptions);
 
@@ -183,14 +193,14 @@ export class DocumentManager {
       const runOptions: IRunOptions = {
         text: item,
         font: format?.fontName,
-        size: format?.fontSize ? format.fontSize * 2 : undefined
+        size: format?.fontSize ? format.fontSize * 2 : undefined,
       };
 
       return new Paragraph({
         children: [new TextRun(runOptions)],
         bullet: {
-          level: 0
-        }
+          level: 0,
+        },
       });
     });
 
@@ -246,7 +256,7 @@ export class DocumentManager {
               fontSize: item.format?.fontSize,
               bold: item.format?.bold,
               italic: item.format?.italic,
-              color: item.format?.color
+              color: item.format?.color,
             });
           }
           break;
@@ -258,7 +268,7 @@ export class DocumentManager {
               fontName: item.format?.fontName,
               fontSize: item.format?.fontSize,
               bold: item.format?.bold,
-              borderBottom: item.format?.borderBottom
+              borderBottom: item.format?.borderBottom,
             });
           }
           break;
@@ -267,7 +277,7 @@ export class DocumentManager {
           if (item.items && item.items.length > 0) {
             await this.addBulletList(filename, item.items, {
               fontName: item.format?.fontName,
-              fontSize: item.format?.fontSize
+              fontSize: item.format?.fontSize,
             });
           }
           break;
