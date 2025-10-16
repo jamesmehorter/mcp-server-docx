@@ -28,6 +28,33 @@ export function parseMarkdown(markdown: string): ContentItem[] {
       continue;
     }
 
+    // Check for horizontal rule (---, ***, ___)
+    if (/^[-*_]{3,}$/.test(trimmed)) {
+      // Skip horizontal rules - they're just visual separators in markdown
+      continue;
+    }
+
+    // Check for block quote (lines starting with >)
+    if (/^>\s/.test(trimmed)) {
+      // Remove the > markers and join multi-line quotes
+      const quoteText = trimmed
+        .split('\n')
+        .map(line => line.replace(/^>\s?/, '').trim())
+        .filter(line => line)
+        .join(' ');
+
+      if (quoteText) {
+        items.push({
+          type: 'paragraph',
+          text: quoteText,
+          format: {
+            italic: true, // Style quotes in italic
+          },
+        });
+      }
+      continue;
+    }
+
     // Check for heading
     const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/m);
     if (headingMatch) {
@@ -126,8 +153,9 @@ function splitIntoBlocks(markdown: string): string[] {
 
     // If we have accumulated empty lines and hit content, add them as spacing
     if (emptyLineCount > 0) {
-      // Add empty blocks for spacing (one less than count, since one empty line is just block separation)
-      for (let j = 1; j < emptyLineCount; j++) {
+      // Add empty blocks for spacing
+      // In markdown, even a single blank line should create visual spacing
+      for (let j = 0; j < emptyLineCount; j++) {
         blocks.push('');
       }
       emptyLineCount = 0;
