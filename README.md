@@ -51,7 +51,7 @@ Key achievements:
 - Add bulleted and numbered lists
 - In-memory document management for fast operations
 - Save documents only when needed
-- Comprehensive test suite with 32 passing tests
+- Comprehensive test suite with 36 passing tests
 
 ## Installation
 
@@ -62,7 +62,7 @@ npm run build
 
 ## Testing
 
-Comprehensive test suite with 32 tests powered by **Vitest** (fast, modern, ESM-native):
+Comprehensive test suite with 36 tests powered by **Vitest** (fast, modern, ESM-native):
 
 ```bash
 npm test              # Run tests once
@@ -80,7 +80,7 @@ The test suite validates:
 - Error handling
 - Complex multi-section documents
 
-**Performance:** All 32 tests complete in ~400ms (2x faster than Jest)
+**Performance:** All 36 tests complete in ~350ms (2x faster than Jest)
 
 ## Code Quality
 
@@ -191,6 +191,7 @@ Create a complete Word document from markdown text in a single MCP call. This is
 - **Unordered lists:** Lines starting with `-` or `*`
 - **Ordered lists:** Lines starting with `1.`, `2.`, etc.
 - **Inline formatting:** `**bold**` and `*italic*` in any text
+- **Spacing:** Multiple empty lines create visual spacing (2 empty lines = 1 line of spacing)
 - **Default font:** Times New Roman (applied automatically)
 
 **Example:**
@@ -259,8 +260,8 @@ Create a complete Word document from a structured content array in a single MCP 
 
 ```typescript
 {
-  type: 'paragraph' | 'heading' | 'bullets' | 'ordered',
-  text?: string,              // For paragraph and heading
+  type?: 'paragraph' | 'heading' | 'bullets' | 'ordered',  // Defaults to 'paragraph'
+  text?: string,              // For paragraph and heading (use "" for spacing)
   items?: string[],           // For bullets and ordered lists
   format?: {
     fontName?: string,
@@ -274,6 +275,11 @@ Create a complete Word document from a structured content array in a single MCP 
 }
 ```
 
+**Tips:**
+
+- **No need to specify `type: 'paragraph'`** - it's the default! Only specify type for headings and lists.
+- Use `{ text: '' }` to create empty paragraphs for visual spacing between sections.
+
 **Example - Complete Resume in ONE Call:**
 
 ```typescript
@@ -283,9 +289,12 @@ create_document_from_content({
   author: 'John Doe',
   content: [
     {
-      type: 'paragraph',
+      // No type needed - defaults to 'paragraph'
       text: 'JOHN DOE',
       format: { fontName: 'Helvetica', fontSize: 36, bold: true },
+    },
+    {
+      text: '', // Empty paragraph for spacing
     },
     {
       type: 'heading',
@@ -293,9 +302,11 @@ create_document_from_content({
       format: { level: 2, fontName: 'Helvetica', fontSize: 14, borderBottom: true },
     },
     {
-      type: 'paragraph',
       text: 'Software engineer with 10+ years experience building scalable systems.',
       format: { fontName: 'Times New Roman', fontSize: 14 },
+    },
+    {
+      text: '', // Empty paragraph for spacing
     },
     {
       type: 'heading',

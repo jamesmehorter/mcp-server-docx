@@ -74,7 +74,7 @@ interface DocumentSession {
 }
 
 export interface ContentItem {
-  type: 'paragraph' | 'heading' | 'bullets' | 'ordered';
+  type?: 'paragraph' | 'heading' | 'bullets' | 'ordered'; // Defaults to 'paragraph'
   text?: string;
   items?: string[];
   format?: {
@@ -175,6 +175,7 @@ export class DocumentManager {
    * Add a paragraph with formatting
    * Auto-creates session if it doesn't exist
    * Supports markdown-style formatting: **bold**, *italic*
+   * Empty text creates an empty paragraph for spacing
    */
   async addParagraph(
     filename: string,
@@ -188,6 +189,15 @@ export class DocumentManager {
     }
   ): Promise<void> {
     const session = this.getOrCreateSession(filename);
+
+    // Handle empty text - create empty paragraph for spacing
+    if (!text || text.trim() === '') {
+      const paragraph = new Paragraph({
+        children: [],
+      });
+      session.children.push(paragraph);
+      return;
+    }
 
     // Parse markdown formatting in text
     const segments = parseMarkdownFormatting(text);
@@ -395,9 +405,12 @@ export class DocumentManager {
 
     // Process all content items
     for (const item of content) {
-      switch (item.type) {
+      // Default to 'paragraph' if type not specified
+      const itemType = item.type || 'paragraph';
+
+      switch (itemType) {
         case 'paragraph':
-          if (item.text) {
+          if (item.text !== undefined) {
             await this.addParagraph(filename, item.text, {
               fontName: item.format?.fontName,
               fontSize: item.format?.fontSize,
@@ -409,7 +422,7 @@ export class DocumentManager {
           break;
 
         case 'heading':
-          if (item.text) {
+          if (item.text !== undefined && item.text !== '') {
             await this.addHeading(filename, item.text, {
               level: item.format?.level,
               fontName: item.format?.fontName,

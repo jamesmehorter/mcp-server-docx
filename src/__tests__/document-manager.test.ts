@@ -250,6 +250,22 @@ describe('DocumentManager', () => {
       const stats = await fs.stat(testFile);
       expect(stats.size).toBeGreaterThan(0);
     });
+
+    test('should default to paragraph type when type is not specified', async () => {
+      const content = [
+        { text: 'First paragraph' }, // No type - should default to paragraph
+        { type: 'heading' as const, text: 'Heading', format: { level: 2 } },
+        { text: 'Second paragraph' }, // No type - should default to paragraph
+        { text: '' }, // Empty paragraph for spacing
+        { type: 'bullets' as const, items: ['Bullet 1'] },
+        { text: 'Final paragraph' }, // No type - should default to paragraph
+      ];
+
+      await docManager.createDocumentFromContent(testFile, content);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
   });
 
   describe('Complex document creation', () => {

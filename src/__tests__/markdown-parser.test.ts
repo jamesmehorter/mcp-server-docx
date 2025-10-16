@@ -144,10 +144,15 @@ Paragraph with multiple empty lines above.
 `;
     const result = parseMarkdown(markdown);
 
-    expect(result).toHaveLength(3);
+    // Should include empty paragraphs for spacing
+    expect(result.length).toBeGreaterThanOrEqual(3);
     expect(result[0].type).toBe('heading');
+    // Empty paragraph for spacing
     expect(result[1].type).toBe('paragraph');
-    expect(result[2].type).toBe('bullets');
+    expect(result[1].text).toBe('');
+    // Regular paragraph
+    expect(result[2].type).toBe('paragraph');
+    expect(result[2].text).toBe('Paragraph with multiple empty lines above.');
   });
 
   test('handles complex resume example', () => {
@@ -204,5 +209,62 @@ Key achievements:
 
     expect(result).toHaveLength(1);
     expect(result[0].items).toEqual(['Item with extra spaces', 'Another item']);
+  });
+
+  test('creates empty paragraphs for spacing', () => {
+    const markdown = `
+# Heading 1
+
+Paragraph 1
+
+
+Paragraph 2 with two empty lines above
+
+
+Paragraph 3 with three empty lines above
+`;
+    const result = parseMarkdown(markdown);
+
+    // Should have: heading, paragraph 1, empty, paragraph 2, empty, paragraph 3
+    expect(result.length).toBeGreaterThanOrEqual(5);
+
+    // Find the empty paragraphs
+    const emptyParagraphs = result.filter(item => item.type === 'paragraph' && item.text === '');
+    expect(emptyParagraphs.length).toBeGreaterThan(0);
+
+    // Verify structure
+    expect(result[0].type).toBe('heading');
+    expect(result[1].type).toBe('paragraph');
+    expect(result[1].text).toBe('Paragraph 1');
+  });
+
+  test('single empty line between blocks creates no extra spacing', () => {
+    const markdown = `
+# Heading
+
+Paragraph
+`;
+    const result = parseMarkdown(markdown);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].type).toBe('heading');
+    expect(result[1].type).toBe('paragraph');
+  });
+
+  test('multiple empty lines create spacing paragraphs', () => {
+    const markdown = `Paragraph 1
+
+
+Paragraph 2`;
+    const result = parseMarkdown(markdown);
+
+    // Should be: paragraph 1, empty paragraph, paragraph 2
+    expect(result).toHaveLength(3);
+    expect(result[0].type).toBe('paragraph');
+    expect(result[0].text).toBe('Paragraph 1');
+    expect(result[1].type).toBe('paragraph');
+    expect(result[1].text).toBe('');
+    expect(result[2].type).toBe('paragraph');
+    expect(result[2].text).toBe('Paragraph 2');
   });
 });

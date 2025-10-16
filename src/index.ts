@@ -118,13 +118,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                   type: {
                     type: 'string',
                     enum: ['paragraph', 'heading', 'bullets', 'ordered'],
-                    description: 'Type of content item',
+                    description:
+                      "Type of content item (defaults to 'paragraph' if not specified - only specify for heading/bullets/ordered)",
                   },
                   text: { type: 'string', description: 'Text content (for paragraph and heading)' },
                   items: {
                     type: 'array',
                     items: { type: 'string' },
-                    description: 'Bullet point items (for bullets type)',
+                    description: 'List items (for bullets and ordered types)',
                   },
                   format: {
                     type: 'object',
@@ -145,7 +146,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     },
                   },
                 },
-                required: ['type'],
+                required: [],
               },
             },
           },

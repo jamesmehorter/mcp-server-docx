@@ -7,6 +7,7 @@ import { ContentItem } from './document-manager.js';
  * - Unordered lists: - item or * item
  * - Ordered lists: 1. item, 2. item, etc.
  * - Paragraphs: regular text
+ * - Empty lines: create empty paragraphs for spacing
  * - Inline formatting: **bold**, *italic*
  */
 export function parseMarkdown(markdown: string): ContentItem[] {
@@ -17,7 +18,15 @@ export function parseMarkdown(markdown: string): ContentItem[] {
 
   for (const block of blocks) {
     const trimmed = block.trim();
-    if (!trimmed) continue;
+
+    // Handle empty blocks - create empty paragraph for spacing
+    if (!trimmed) {
+      items.push({
+        type: 'paragraph',
+        text: '',
+      });
+      continue;
+    }
 
     // Check for heading
     const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/m);
@@ -80,13 +89,14 @@ export function parseMarkdown(markdown: string): ContentItem[] {
 }
 
 /**
- * Split markdown into blocks, preserving list structures
+ * Split markdown into blocks, preserving list structures and empty lines for spacing
  */
 function splitIntoBlocks(markdown: string): string[] {
   const blocks: string[] = [];
   const lines = markdown.split('\n');
   let currentBlock = '';
   let inList = false;
+  let emptyLineCount = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -109,7 +119,18 @@ function splitIntoBlocks(markdown: string): string[] {
         blocks.push(currentBlock);
         currentBlock = '';
       }
+      // Track consecutive empty lines
+      emptyLineCount++;
       continue;
+    }
+
+    // If we have accumulated empty lines and hit content, add them as spacing
+    if (emptyLineCount > 0) {
+      // Add empty blocks for spacing (one less than count, since one empty line is just block separation)
+      for (let j = 1; j < emptyLineCount; j++) {
+        blocks.push('');
+      }
+      emptyLineCount = 0;
     }
 
     // If we hit a heading, end previous block and start new one
