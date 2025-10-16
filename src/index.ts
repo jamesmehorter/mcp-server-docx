@@ -164,10 +164,101 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             markdown: {
               type: 'string',
               description:
-                'Markdown text supporting headings (# ## ###), paragraphs, lists (- or 1.), and inline formatting (**bold**, *italic*)',
+                'Markdown text supporting headings (# ## ###), paragraphs, lists (- or 1.), block quotes (>), horizontal rules (---), and inline formatting (**bold**, *italic*)',
             },
             title: { type: 'string', description: 'Document title' },
             author: { type: 'string', description: 'Document author' },
+            styles: {
+              type: 'object',
+              description:
+                'Optional style overrides for markdown elements. Supports heading1-4, paragraph, bullets, ordered, blockquote. Each can have fontName, fontSize, bold, italic, color, borderBottom.',
+              properties: {
+                heading1: {
+                  type: 'object',
+                  properties: {
+                    fontName: { type: 'string' },
+                    fontSize: { type: 'number' },
+                    bold: { type: 'boolean' },
+                    italic: { type: 'boolean' },
+                    color: { type: 'string' },
+                    borderBottom: { type: 'boolean' },
+                  },
+                },
+                heading2: {
+                  type: 'object',
+                  properties: {
+                    fontName: { type: 'string' },
+                    fontSize: { type: 'number' },
+                    bold: { type: 'boolean' },
+                    italic: { type: 'boolean' },
+                    color: { type: 'string' },
+                    borderBottom: { type: 'boolean' },
+                  },
+                },
+                heading3: {
+                  type: 'object',
+                  properties: {
+                    fontName: { type: 'string' },
+                    fontSize: { type: 'number' },
+                    bold: { type: 'boolean' },
+                    italic: { type: 'boolean' },
+                    color: { type: 'string' },
+                    borderBottom: { type: 'boolean' },
+                  },
+                },
+                heading4: {
+                  type: 'object',
+                  properties: {
+                    fontName: { type: 'string' },
+                    fontSize: { type: 'number' },
+                    bold: { type: 'boolean' },
+                    italic: { type: 'boolean' },
+                    color: { type: 'string' },
+                    borderBottom: { type: 'boolean' },
+                  },
+                },
+                paragraph: {
+                  type: 'object',
+                  properties: {
+                    fontName: { type: 'string' },
+                    fontSize: { type: 'number' },
+                    bold: { type: 'boolean' },
+                    italic: { type: 'boolean' },
+                    color: { type: 'string' },
+                  },
+                },
+                bullets: {
+                  type: 'object',
+                  properties: {
+                    fontName: { type: 'string' },
+                    fontSize: { type: 'number' },
+                    bold: { type: 'boolean' },
+                    italic: { type: 'boolean' },
+                    color: { type: 'string' },
+                  },
+                },
+                ordered: {
+                  type: 'object',
+                  properties: {
+                    fontName: { type: 'string' },
+                    fontSize: { type: 'number' },
+                    bold: { type: 'boolean' },
+                    italic: { type: 'boolean' },
+                    color: { type: 'string' },
+                  },
+                },
+                blockquote: {
+                  type: 'object',
+                  properties: {
+                    fontName: { type: 'string' },
+                    fontSize: { type: 'number' },
+                    bold: { type: 'boolean' },
+                    italic: { type: 'boolean' },
+                    color: { type: 'string' },
+                  },
+                },
+              },
+            },
           },
           required: ['filename', 'markdown'],
         },
@@ -256,7 +347,8 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           args.filename as string,
           args.markdown as string,
           args.title as string | undefined,
-          args.author as string | undefined
+          args.author as string | undefined,
+          args.styles as Record<string, unknown> | undefined
         );
         return {
           content: [

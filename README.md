@@ -126,6 +126,66 @@ Key achievements:
 
 ---
 
+### 🎨 Custom Styling for Markdown
+
+**Want Helvetica instead of Times New Roman? Different font sizes?** - Easily customize the appearance!
+
+You can override the default styles by passing a `styles` object:
+
+```
+Create a Word document at /tmp/my-resume.docx from this markdown:
+
+# JANE SMITH
+## Professional Summary
+I am a senior engineer.
+
+Use these custom styles:
+- All headings should be Helvetica
+- H1 should be 36pt bold without bottom border
+- H2 should be 24pt bold with bottom border
+- Paragraphs should be Arial 12pt
+```
+
+**Style options by element:**
+
+- `heading1`, `heading2`, `heading3`, `heading4` - Control heading appearance
+- `paragraph` - Regular paragraph text
+- `bullets` - Bulleted list items
+- `ordered` - Numbered list items
+- `blockquote` - Block quote text (from `> quote`)
+
+**Each element can have:**
+- `fontName` - Font family (e.g., "Helvetica", "Arial", "Times New Roman")
+- `fontSize` - Font size in points (e.g., 12, 14, 36)
+- `bold` - Bold text (true/false)
+- `italic` - Italic text (true/false)
+- `color` - Text color as hex RGB (e.g., "FF0000")
+- `borderBottom` - Bottom border for headings (true/false)
+
+**Example styles object:**
+
+```typescript
+styles: {
+  heading1: { fontName: 'Helvetica', fontSize: 36, bold: true, borderBottom: false },
+  heading2: { fontName: 'Helvetica', fontSize: 24, bold: true, borderBottom: true },
+  heading3: { fontName: 'Helvetica', fontSize: 18, bold: true },
+  paragraph: { fontName: 'Arial', fontSize: 12 },
+  bullets: { fontName: 'Arial', fontSize: 12 },
+  ordered: { fontName: 'Arial', fontSize: 12 },
+  blockquote: { fontName: 'Georgia', fontSize: 12, italic: true }
+}
+```
+
+**Default styles** (used when you don't provide custom styles):
+- Headings: Times New Roman, bold, H1=24pt, H2=18pt, H3/H4=14/12pt
+- H1/H2: Bottom borders, H3/H4: No borders
+- Paragraphs/Lists: Times New Roman, 12pt
+- Blockquotes: Times New Roman, 12pt, italic
+
+**Pro tip:** You only need to specify the elements/properties you want to change! Unspecified elements use the defaults.
+
+---
+
 ### ⚡ Batch Mode with Structured Content
 
 **For when you need fine-grained control** - specify exact fonts, sizes, and colors

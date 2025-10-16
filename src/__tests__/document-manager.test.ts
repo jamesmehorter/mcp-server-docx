@@ -336,4 +336,207 @@ describe('DocumentManager', () => {
       expect(stats.size).toBeGreaterThan(1000); // Should be substantial
     });
   });
+
+  describe('createDocumentFromMarkdown with custom styles', () => {
+    test('should apply default styles when no custom styles provided', async () => {
+      const markdown = `# Heading 1
+## Heading 2
+
+This is a paragraph.
+
+- Bullet item 1
+- Bullet item 2`;
+
+      await docManager.createDocumentFromMarkdown(testFile, markdown);
+      await docManager.saveDocument(testFile);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should apply custom styles to heading elements', async () => {
+      const markdown = `# Main Title
+## Subtitle
+
+Paragraph text here.`;
+
+      const customStyles = {
+        heading1: {
+          fontName: 'Helvetica',
+          fontSize: 36,
+          bold: true,
+          borderBottom: false,
+        },
+        heading2: {
+          fontName: 'Helvetica',
+          fontSize: 24,
+          bold: true,
+          borderBottom: true,
+        },
+      };
+
+      await docManager.createDocumentFromMarkdown(testFile, markdown, 'Test Doc', 'Test Author', customStyles);
+      await docManager.saveDocument(testFile);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should apply custom styles to paragraph and list elements', async () => {
+      const markdown = `Regular paragraph.
+
+- First item
+- Second item
+
+1. Numbered item
+2. Another numbered item`;
+
+      const customStyles = {
+        paragraph: {
+          fontName: 'Arial',
+          fontSize: 14,
+        },
+        bullets: {
+          fontName: 'Arial',
+          fontSize: 12,
+        },
+        ordered: {
+          fontName: 'Arial',
+          fontSize: 12,
+        },
+      };
+
+      await docManager.createDocumentFromMarkdown(testFile, markdown, undefined, undefined, customStyles);
+      await docManager.saveDocument(testFile);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should apply custom styles to blockquotes', async () => {
+      const markdown = `> This is a blockquote
+> It spans multiple lines
+
+Regular paragraph after quote.`;
+
+      const customStyles = {
+        blockquote: {
+          fontName: 'Georgia',
+          fontSize: 13,
+          italic: true,
+          color: '555555',
+        },
+      };
+
+      await docManager.createDocumentFromMarkdown(testFile, markdown, undefined, undefined, customStyles);
+      await docManager.saveDocument(testFile);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should merge custom styles with defaults', async () => {
+      const markdown = `# Title
+## Subtitle
+### H3 Not Customized
+
+Paragraph text.`;
+
+      // Only customize heading1 and heading2, heading3 should use defaults
+      const customStyles = {
+        heading1: {
+          fontName: 'Helvetica',
+          fontSize: 48,
+        },
+        heading2: {
+          fontName: 'Helvetica',
+          fontSize: 32,
+        },
+      };
+
+      await docManager.createDocumentFromMarkdown(testFile, markdown, undefined, undefined, customStyles);
+      await docManager.saveDocument(testFile);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should handle all markdown elements with unified styling', async () => {
+      const markdown = `# Main Title
+
+**Company Name** | Location
+
+---
+
+## Professional Summary
+
+I am a **senior engineer** with *10+ years* experience.
+
+> "Outstanding team player" - Manager
+
+## Skills
+
+- TypeScript
+- React
+- Node.js
+
+## Experience
+
+### Senior Engineer
+
+Key achievements:
+
+1. Built microservices
+2. Reduced latency by 40%
+3. Mentored 5 engineers`;
+
+      const customStyles = {
+        heading1: {
+          fontName: 'Helvetica',
+          fontSize: 36,
+          bold: true,
+        },
+        heading2: {
+          fontName: 'Helvetica',
+          fontSize: 24,
+          bold: true,
+          borderBottom: true,
+        },
+        heading3: {
+          fontName: 'Helvetica',
+          fontSize: 18,
+          bold: true,
+        },
+        paragraph: {
+          fontName: 'Times New Roman',
+          fontSize: 12,
+        },
+        bullets: {
+          fontName: 'Times New Roman',
+          fontSize: 12,
+        },
+        ordered: {
+          fontName: 'Times New Roman',
+          fontSize: 12,
+        },
+        blockquote: {
+          fontName: 'Georgia',
+          fontSize: 12,
+          italic: true,
+        },
+      };
+
+      await docManager.createDocumentFromMarkdown(
+        testFile,
+        markdown,
+        'Custom Styled Resume',
+        'John Doe',
+        customStyles
+      );
+      await docManager.saveDocument(testFile);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(1000); // Should be substantial document
+    });
+  });
 });

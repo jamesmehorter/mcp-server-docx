@@ -11,6 +11,55 @@ import {
   LevelFormat,
 } from 'docx';
 import * as fs from 'fs/promises';
+import { MarkdownStyles } from './types.js';
+
+/**
+ * Default styles for markdown elements
+ * These provide professional, Word-like defaults for markdown-to-Word conversion
+ */
+export const DEFAULT_MARKDOWN_STYLES: MarkdownStyles = {
+  heading1: {
+    fontName: 'Times New Roman',
+    fontSize: 24,
+    bold: true,
+    borderBottom: true,
+  },
+  heading2: {
+    fontName: 'Times New Roman',
+    fontSize: 18,
+    bold: true,
+    borderBottom: true,
+  },
+  heading3: {
+    fontName: 'Times New Roman',
+    fontSize: 14,
+    bold: true,
+    borderBottom: false,
+  },
+  heading4: {
+    fontName: 'Times New Roman',
+    fontSize: 12,
+    bold: true,
+    borderBottom: false,
+  },
+  paragraph: {
+    fontName: 'Times New Roman',
+    fontSize: 12,
+  },
+  bullets: {
+    fontName: 'Times New Roman',
+    fontSize: 12,
+  },
+  ordered: {
+    fontName: 'Times New Roman',
+    fontSize: 12,
+  },
+  blockquote: {
+    fontName: 'Times New Roman',
+    fontSize: 12,
+    italic: true,
+  },
+};
 
 interface TextSegment {
   text: string;
@@ -481,11 +530,15 @@ export class DocumentManager {
    * 2. Second step
    * ```
    */
+  /**
+   * Create a Word document from markdown with optional custom styles
+   */
   async createDocumentFromMarkdown(
     filename: string,
     markdown: string,
     title?: string,
-    author?: string
+    author?: string,
+    styles?: Partial<MarkdownStyles>
   ): Promise<void> {
     // Lazy import to avoid circular dependency issues
     const { parseMarkdown } = await import('./markdown-parser.js');
@@ -493,7 +546,68 @@ export class DocumentManager {
     // Parse markdown into content items
     const content = parseMarkdown(markdown);
 
+    // Merge user styles with defaults
+    const mergedStyles: MarkdownStyles = {
+      ...DEFAULT_MARKDOWN_STYLES,
+      ...styles,
+    };
+
+    // Apply styles to content items
+    const styledContent = this.applyStylesToContent(content, mergedStyles);
+
     // Use existing batch operation
-    await this.createDocumentFromContent(filename, content, title, author);
+    await this.createDocumentFromContent(filename, styledContent, title, author);
+  }
+
+  /**
+   * Apply style configuration to parsed markdown content
+   */
+  private applyStylesToContent(
+    content: ContentItem[],
+    styles: MarkdownStyles
+  ): ContentItem[] {
+    return content.map((item) => {
+      const type = item.type || 'paragraph';
+      let elementStyle;
+
+      // Determine which style to apply based on content type
+      switch (type) {
+        case 'heading':
+          // Map heading level to style
+          const level = item.format?.level || 1;
+          if (level === 1) elementStyle = styles.heading1;
+          else if (level === 2) elementStyle = styles.heading2;
+          else if (level === 3) elementStyle = styles.heading3;
+          else if (level === 4) elementStyle = styles.heading4;
+          break;
+        case 'paragraph':
+          // Check if this is a blockquote (italic paragraph from markdown)
+          if (item.format?.italic) {
+            elementStyle = styles.blockquote;
+          } else {
+            elementStyle = styles.paragraph;
+          }
+          break;
+        case 'bullets':
+          elementStyle = styles.bullets;
+          break;
+        case 'ordered':
+          elementStyle = styles.ordered;
+          break;
+      }
+
+      // Merge element style with any existing format, preserving user overrides
+      if (elementStyle) {
+        return {
+          ...item,
+          format: {
+            ...elementStyle,
+            ...item.format, // User format takes precedence
+          },
+        };
+      }
+
+      return item;
+    });
   }
 }
