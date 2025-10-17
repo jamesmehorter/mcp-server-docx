@@ -8,7 +8,7 @@ const docManager = new DocumentManager();
 
 const server = new Server(
   {
-    name: 'word-document-server',
+    name: 'mcp-server-docx',
     version: '1.0.0',
   },
   {

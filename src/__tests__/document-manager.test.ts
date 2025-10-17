@@ -563,4 +563,153 @@ Key achievements:
       expect(stats.size).toBeGreaterThan(1000); // Should be substantial document
     });
   });
+
+  describe('Link support', () => {
+    test('should handle markdown links in paragraphs', async () => {
+      const content: ContentItem[] = [
+        {
+          type: 'paragraph',
+          text: 'Visit my [website](https://example.com) for more info.',
+          format: { fontName: 'Arial', fontSize: 12 },
+        },
+      ];
+
+      await docManager.createDocumentFromContent(testFile, content);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should handle multiple links in one paragraph', async () => {
+      const content: ContentItem[] = [
+        {
+          type: 'paragraph',
+          text: '[GitHub](https://github.com) | [LinkedIn](https://linkedin.com)',
+          format: { fontName: 'Arial', fontSize: 11 },
+        },
+      ];
+
+      await docManager.createDocumentFromContent(testFile, content);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should handle links in headings', async () => {
+      const content: ContentItem[] = [
+        {
+          type: 'heading',
+          text: 'Check out [this project](https://example.com)',
+          format: { level: 1, fontName: 'Arial', fontSize: 14 },
+        },
+      ];
+
+      await docManager.createDocumentFromContent(testFile, content);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should handle links in bullet lists', async () => {
+      const content: ContentItem[] = [
+        {
+          type: 'bullets',
+          items: [
+            'Email: [john@example.com](mailto:john@example.com)',
+            'GitHub: [github.com/johndoe](https://github.com/johndoe)',
+            'Website: [johndoe.com](https://johndoe.com)',
+          ],
+          format: { fontName: 'Arial', fontSize: 11 },
+        },
+      ];
+
+      await docManager.createDocumentFromContent(testFile, content);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should handle links mixed with bold and italic formatting', async () => {
+      const content: ContentItem[] = [
+        {
+          type: 'paragraph',
+          text: 'I am a **senior engineer** with *10+ years* experience. Check my [portfolio](https://example.com).',
+          format: { fontName: 'Arial', fontSize: 12 },
+        },
+      ];
+
+      await docManager.createDocumentFromContent(testFile, content);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Horizontal rule support', () => {
+    test('should handle horizontal rule with dashes', async () => {
+      const content: ContentItem[] = [
+        {
+          type: 'paragraph',
+          text: 'Section 1',
+        },
+        {
+          type: 'paragraph',
+          text: '---',
+        },
+        {
+          type: 'paragraph',
+          text: 'Section 2',
+        },
+      ];
+
+      await docManager.createDocumentFromContent(testFile, content);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should handle horizontal rule with asterisks', async () => {
+      const content: ContentItem[] = [
+        {
+          type: 'paragraph',
+          text: 'Section 1',
+        },
+        {
+          type: 'paragraph',
+          text: '***',
+        },
+        {
+          type: 'paragraph',
+          text: 'Section 2',
+        },
+      ];
+
+      await docManager.createDocumentFromContent(testFile, content);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+
+    test('should handle horizontal rule with underscores', async () => {
+      const content: ContentItem[] = [
+        {
+          type: 'paragraph',
+          text: 'Section 1',
+        },
+        {
+          type: 'paragraph',
+          text: '___',
+        },
+        {
+          type: 'paragraph',
+          text: 'Section 2',
+        },
+      ];
+
+      await docManager.createDocumentFromContent(testFile, content);
+
+      const stats = await fs.stat(testFile);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+  });
 });

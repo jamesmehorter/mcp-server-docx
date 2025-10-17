@@ -30,7 +30,11 @@ export function parseMarkdown(markdown: string): ContentItem[] {
 
     // Check for horizontal rule (---, ***, ___)
     if (/^[-*_]{3,}$/.test(trimmed)) {
-      // Skip horizontal rules - they're just visual separators in markdown
+      // Convert to empty paragraph with bottom border
+      items.push({
+        type: 'paragraph',
+        text: '---',
+      });
       continue;
     }
 

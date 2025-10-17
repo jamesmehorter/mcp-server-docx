@@ -9,6 +9,7 @@ import {
   BorderStyle,
   AlignmentType,
   LevelFormat,
+  ExternalHyperlink,
 } from 'docx';
 import * as fs from 'fs/promises';
 import { MarkdownStyles } from './types.js';
@@ -65,18 +66,19 @@ interface TextSegment {
   text: string;
   bold?: boolean;
   italic?: boolean;
+  link?: string; // URL for hyperlinks
 }
 
 /**
- * Parse markdown-style formatting (**bold**, *italic*) and convert to text segments
+ * Parse markdown-style formatting (**bold**, *italic*, [text](url)) and convert to text segments
  */
 function parseMarkdownFormatting(text: string): TextSegment[] {
   const segments: TextSegment[] = [];
   let currentPos = 0;
 
-  // Regex to match **bold** or *italic* (non-greedy)
-  // Matches: **text** or *text* but not *** or ****
-  const regex = /(\*\*([^*]+?)\*\*)|(\*([^*]+?)\*)/g;
+  // Regex to match [text](url), **bold**, or *italic* (non-greedy)
+  // Order matters: match links first, then bold, then italic
+  const regex = /(\[([^\]]+?)\]\(([^)]+?)\))|(\*\*([^*]+?)\*\*)|(\*([^*]+?)\*)/g;
   let match;
 
   while ((match = regex.exec(text)) !== null) {
@@ -89,15 +91,21 @@ function parseMarkdownFormatting(text: string): TextSegment[] {
 
     // Add formatted text
     if (match[1]) {
+      // [text](url) - link
+      segments.push({
+        text: match[2], // link text
+        link: match[3], // url
+      });
+    } else if (match[4]) {
       // **bold**
       segments.push({
-        text: match[2],
+        text: match[5],
         bold: true,
       });
-    } else if (match[3]) {
+    } else if (match[6]) {
       // *italic*
       segments.push({
-        text: match[4],
+        text: match[7],
         italic: true,
       });
     }
@@ -223,7 +231,7 @@ export class DocumentManager {
   /**
    * Add a paragraph with formatting
    * Auto-creates session if it doesn't exist
-   * Supports markdown-style formatting: **bold**, *italic*
+   * Supports markdown-style formatting: **bold**, *italic*, [text](url)
    * Empty text creates an empty paragraph for spacing
    */
   async addParagraph(
@@ -235,15 +243,52 @@ export class DocumentManager {
       bold?: boolean;
       italic?: boolean;
       color?: string;
+      borderBottom?: boolean;
     }
   ): Promise<void> {
     const session = this.getOrCreateSession(filename);
 
+    // Handle horizontal rule (---, ***, ___) - convert to border line
+    if (/^[-*_]{3,}$/.test(text.trim())) {
+      const paragraphOptions: IParagraphOptions = {
+        children: [new TextRun({ text: '' })],
+        spacing: {
+          after: 200, // Add spacing after horizontal rule
+        },
+        border: {
+          bottom: {
+            color: '000000',
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 6,
+          },
+        },
+      };
+      const paragraph = new Paragraph(paragraphOptions);
+      session.children.push(paragraph);
+      return;
+    }
+
     // Handle empty text - create empty paragraph for spacing
     if (!text || text.trim() === '') {
-      const paragraph = new Paragraph({
-        children: [],
-      });
+      const paragraphOptions: IParagraphOptions = {
+        children: [new TextRun({ text: '' })], // Add empty TextRun for proper rendering
+        spacing: {
+          after: 200, // Add spacing after empty paragraph (10pt)
+        },
+        // Add border if requested (useful for divider lines)
+        ...(format?.borderBottom && {
+          border: {
+            bottom: {
+              color: '000000',
+              space: 1,
+              style: BorderStyle.SINGLE,
+              size: 6,
+            },
+          },
+        }),
+      };
+      const paragraph = new Paragraph(paragraphOptions);
       session.children.push(paragraph);
       return;
     }
@@ -251,8 +296,8 @@ export class DocumentManager {
     // Parse markdown formatting in text
     const segments = parseMarkdownFormatting(text);
 
-    // Create TextRun for each segment
-    const textRuns = segments.map(segment => {
+    // Create TextRun or ExternalHyperlink for each segment
+    const children = segments.map(segment => {
       const runOptions: IRunOptions = {
         text: segment.text,
         font: format?.fontName || 'Times New Roman', // Default to Times New Roman if not specified
@@ -261,11 +306,20 @@ export class DocumentManager {
         italics: format?.italic || segment.italic, // Apply markdown italic or format italic
         color: format?.color,
       };
+
+      // If segment has a link, wrap in ExternalHyperlink
+      if (segment.link) {
+        return new ExternalHyperlink({
+          children: [new TextRun(runOptions)],
+          link: segment.link,
+        });
+      }
+
       return new TextRun(runOptions);
     });
 
     const paragraph = new Paragraph({
-      children: textRuns,
+      children,
     });
 
     session.children.push(paragraph);
@@ -274,7 +328,7 @@ export class DocumentManager {
   /**
    * Add a heading with formatting and optional border
    * Auto-creates session if it doesn't exist
-   * Supports markdown-style formatting: **bold**, *italic*
+   * Supports markdown-style formatting: **bold**, *italic*, [text](url)
    */
   async addHeading(
     filename: string,
@@ -284,6 +338,7 @@ export class DocumentManager {
       fontName?: string;
       fontSize?: number;
       bold?: boolean;
+      color?: string;
       borderBottom?: boolean;
     }
   ): Promise<void> {
@@ -295,21 +350,41 @@ export class DocumentManager {
     // Parse markdown formatting in text
     const segments = parseMarkdownFormatting(text);
 
-    // Create TextRun for each segment
-    const textRuns = segments.map(segment => {
+    // Create TextRun or ExternalHyperlink for each segment
+    const children = segments.map(segment => {
       const runOptions: IRunOptions = {
         text: segment.text,
         font: options?.fontName || 'Times New Roman',
         size: options?.fontSize ? options.fontSize * 2 : undefined,
         bold: (options?.bold ?? true) || segment.bold, // Default headings to bold
         italics: segment.italic,
+        color: options?.color,
       };
+
+      // If segment has a link, wrap in ExternalHyperlink
+      if (segment.link) {
+        return new ExternalHyperlink({
+          children: [new TextRun(runOptions)],
+          link: segment.link,
+        });
+      }
+
       return new TextRun(runOptions);
     });
 
     const paragraphOptions: IParagraphOptions = {
-      heading: headingLevel,
-      children: textRuns,
+      // Only use heading style if no custom color is specified
+      // Word's built-in heading styles override inline colors, so we skip the heading
+      // property when custom formatting is needed
+      ...(options?.color ? {} : { heading: headingLevel }),
+      children,
+      // Add spacing to make it look like a heading even without the style
+      ...(options?.color && {
+        spacing: {
+          before: 240, // 12pt before
+          after: 120, // 6pt after
+        },
+      }),
       // Add border if requested
       ...(options?.borderBottom && {
         border: {
@@ -331,7 +406,7 @@ export class DocumentManager {
   /**
    * Add a bulleted list
    * Auto-creates session if it doesn't exist
-   * Supports markdown-style formatting: **bold**, *italic*
+   * Supports markdown-style formatting: **bold**, *italic*, [text](url)
    */
   async addBulletList(
     filename: string,
@@ -339,6 +414,7 @@ export class DocumentManager {
     format?: {
       fontName?: string;
       fontSize?: number;
+      color?: string;
     }
   ): Promise<void> {
     const session = this.getOrCreateSession(filename);
@@ -347,20 +423,30 @@ export class DocumentManager {
       // Parse markdown formatting in each bullet item
       const segments = parseMarkdownFormatting(item);
 
-      // Create TextRun for each segment
-      const textRuns = segments.map(segment => {
+      // Create TextRun or ExternalHyperlink for each segment
+      const children = segments.map(segment => {
         const runOptions: IRunOptions = {
           text: segment.text,
           font: format?.fontName || 'Times New Roman',
           size: format?.fontSize ? format.fontSize * 2 : undefined,
           bold: segment.bold,
           italics: segment.italic,
+          color: format?.color,
         };
+
+        // If segment has a link, wrap in ExternalHyperlink
+        if (segment.link) {
+          return new ExternalHyperlink({
+            children: [new TextRun(runOptions)],
+            link: segment.link,
+          });
+        }
+
         return new TextRun(runOptions);
       });
 
       return new Paragraph({
-        children: textRuns,
+        children,
         bullet: {
           level: 0,
         },
@@ -373,7 +459,7 @@ export class DocumentManager {
   /**
    * Add an ordered (numbered) list
    * Auto-creates session if it doesn't exist
-   * Supports markdown-style formatting: **bold**, *italic*
+   * Supports markdown-style formatting: **bold**, *italic*, [text](url)
    */
   async addOrderedList(
     filename: string,
@@ -381,6 +467,7 @@ export class DocumentManager {
     format?: {
       fontName?: string;
       fontSize?: number;
+      color?: string;
     }
   ): Promise<void> {
     const session = this.getOrCreateSession(filename);
@@ -389,20 +476,30 @@ export class DocumentManager {
       // Parse markdown formatting in each item
       const segments = parseMarkdownFormatting(item);
 
-      // Create TextRun for each segment
-      const textRuns = segments.map(segment => {
+      // Create TextRun or ExternalHyperlink for each segment
+      const children = segments.map(segment => {
         const runOptions: IRunOptions = {
           text: segment.text,
           font: format?.fontName || 'Times New Roman',
           size: format?.fontSize ? format.fontSize * 2 : undefined,
           bold: segment.bold,
           italics: segment.italic,
+          color: format?.color,
         };
+
+        // If segment has a link, wrap in ExternalHyperlink
+        if (segment.link) {
+          return new ExternalHyperlink({
+            children: [new TextRun(runOptions)],
+            link: segment.link,
+          });
+        }
+
         return new TextRun(runOptions);
       });
 
       return new Paragraph({
-        children: textRuns,
+        children,
         numbering: {
           reference: 'default-numbering',
           level: 0,
@@ -466,6 +563,7 @@ export class DocumentManager {
               bold: item.format?.bold,
               italic: item.format?.italic,
               color: item.format?.color,
+              borderBottom: item.format?.borderBottom,
             });
           }
           break;
@@ -477,6 +575,7 @@ export class DocumentManager {
               fontName: item.format?.fontName,
               fontSize: item.format?.fontSize,
               bold: item.format?.bold,
+              color: item.format?.color,
               borderBottom: item.format?.borderBottom,
             });
           }
@@ -487,6 +586,7 @@ export class DocumentManager {
             await this.addBulletList(filename, item.items, {
               fontName: item.format?.fontName,
               fontSize: item.format?.fontSize,
+              color: item.format?.color,
             });
           }
           break;
@@ -496,6 +596,7 @@ export class DocumentManager {
             await this.addOrderedList(filename, item.items, {
               fontName: item.format?.fontName,
               fontSize: item.format?.fontSize,
+              color: item.format?.color,
             });
           }
           break;

@@ -270,4 +270,56 @@ Paragraph 2`;
     expect(result[3].type).toBe('paragraph');
     expect(result[3].text).toBe('Paragraph 2');
   });
+
+  test('parses horizontal rules with dashes', () => {
+    const markdown = `Section 1
+
+---
+
+Section 2`;
+    const result = parseMarkdown(markdown);
+
+    // Should have paragraph 1, empty, horizontal rule (---), empty, paragraph 2
+    const hrItem = result.find(item => item.type === 'paragraph' && item.text === '---');
+    expect(hrItem).toBeDefined();
+  });
+
+  test('parses horizontal rules with asterisks', () => {
+    const markdown = `Section 1
+
+***
+
+Section 2`;
+    const result = parseMarkdown(markdown);
+
+    // All horizontal rules are normalized to ---
+    const hrItem = result.find(item => item.type === 'paragraph' && item.text === '---');
+    expect(hrItem).toBeDefined();
+  });
+
+  test('parses horizontal rules with underscores', () => {
+    const markdown = `Section 1
+
+___
+
+Section 2`;
+    const result = parseMarkdown(markdown);
+
+    // All horizontal rules are normalized to ---
+    const hrItem = result.find(item => item.type === 'paragraph' && item.text === '---');
+    expect(hrItem).toBeDefined();
+  });
+
+  test('parses horizontal rules with more than 3 characters', () => {
+    const markdown = `Section 1
+
+-----
+
+Section 2`;
+    const result = parseMarkdown(markdown);
+
+    // All horizontal rules are normalized to ---
+    const hrItem = result.find(item => item.type === 'paragraph' && item.text === '---');
+    expect(hrItem).toBeDefined();
+  });
 });
