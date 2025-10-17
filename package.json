@@ -12,12 +12,11 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "lint": "eslint . --max-warnings 0",
+    "lint:check": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit",
-    "ci": "npm run typecheck && npm run lint && npm run format:check && npm run test"
+    "format:fix": "prettier --write .",
+    "type:check": "tsc --noEmit"
   },
   "keywords": [
     "mcp",

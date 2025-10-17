@@ -385,6 +385,7 @@ This project is built on the excellent [docx](https://docx.js.org) library by Do
 **[docx.js.org](https://docx.js.org)** | **[GitHub](https://github.com/dolanmiu/docx)** - A powerful library for generating Word documents (.docx files) in JavaScript/TypeScript. This MCP server wouldn't be possible without the solid foundation that docx provides for creating and manipulating Office Open XML documents.
 
 Thanks to:
+
 - **Dolan Miu** and all contributors to the [docx library](https://github.com/dolanmiu/docx)
 - The **Anthropic team** for building the Model Context Protocol and Claude Code
 - The **open source community** for making tools like this possible
