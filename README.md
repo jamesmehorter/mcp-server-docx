@@ -13,6 +13,10 @@ A fast, TypeScript-based MCP server for creating professional Word documents fro
 1. **Download the latest release:**
    - Go to [Releases](../../releases)
    - Download `index.js` from the latest release
+   - **Recommended location:** Create a dedicated folder for MCP servers, for example:
+     - macOS/Linux: `~/mcp-servers/docx/index.js`
+     - Windows: `%USERPROFILE%\mcp-servers\docx\index.js`
+   - This keeps your MCP servers organized in one place
 
 2. **Configure Claude Desktop:**
 
@@ -28,13 +32,16 @@ Add this configuration:
   "mcpServers": {
     "mcp-server-docx": {
       "command": "node",
-      "args": ["/path/to/downloaded/index.js"]
+      "args": ["/Users/YOUR_USERNAME/mcp-servers/docx/index.js"]
     }
   }
 }
 ```
 
-**Note:** Replace `/path/to/downloaded/index.js` with the actual path where you saved the file.
+**Note:** Replace `/Users/YOUR_USERNAME/mcp-servers/docx/index.js` with the actual path where you saved the file.
+
+- macOS/Linux: Use full path like `/Users/yourname/mcp-servers/docx/index.js` or `~/mcp-servers/docx/index.js`
+- Windows: Use full path like `C:\\Users\\yourname\\mcp-servers\\docx\\index.js`
 
 ### Option 2: Build from Source
 
