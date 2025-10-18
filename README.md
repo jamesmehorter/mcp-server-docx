@@ -6,75 +6,28 @@ A fast, TypeScript-based MCP server for creating professional Word documents fro
 
 ## Quick Setup
 
-### Option 1: Download Pre-Built Bundle (Recommended)
+1. **Download** `index.js` from [Releases](../../releases) and save to `~/mcp-servers/docx/index.js`
 
-**No npm install needed!** Just download and run.
+2. **Configure** Claude Desktop - edit `claude_desktop_config.json`:
+   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-1. **Download the latest release:**
-   - Go to [Releases](../../releases)
-   - Download `index.js` from the latest release
-   - **Recommended location:** Create a dedicated folder for MCP servers, for example:
-     - macOS/Linux: `~/mcp-servers/docx/index.js`
-     - Windows: `%USERPROFILE%\mcp-servers\docx\index.js`
-   - This keeps your MCP servers organized in one place
+   ```json
+   {
+     "mcpServers": {
+       "mcp-server-docx": {
+         "command": "node",
+         "args": ["/Users/YOUR_USERNAME/mcp-servers/docx/index.js"]
+       }
+     }
+   }
+   ```
 
-2. **Configure Claude Desktop:**
+   Replace the path with where you saved the file (Windows: use `C:\\Users\\...` with double backslashes)
 
-Edit your Claude Desktop configuration file:
+3. **Restart** Claude Desktop
 
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-Add this configuration:
-
-```json
-{
-  "mcpServers": {
-    "mcp-server-docx": {
-      "command": "node",
-      "args": ["/Users/YOUR_USERNAME/mcp-servers/docx/index.js"]
-    }
-  }
-}
-```
-
-**Note:** Replace `/Users/YOUR_USERNAME/mcp-servers/docx/index.js` with the actual path where you saved the file.
-
-- macOS/Linux: Use full path like `/Users/yourname/mcp-servers/docx/index.js` or `~/mcp-servers/docx/index.js`
-- Windows: Use full path like `C:\\Users\\yourname\\mcp-servers\\docx\\index.js`
-
-### Option 2: Build from Source
-
-For contributors or if you want to modify the code:
-
-```bash
-git clone <repository-url>
-cd mcp-server-docx
-nvm install  # Use the correct Node.js version from .nvmrc
-npm install
-npm run build
-```
-
-Then configure Claude Desktop:
-
-```json
-{
-  "mcpServers": {
-    "mcp-server-docx": {
-      "command": "node",
-      "args": ["/absolute/path/to/mcp-server-docx/dist/index.js"]
-    }
-  }
-}
-```
-
-### 3. Restart Claude Desktop
-
-Quit and reopen Claude Desktop to load the MCP server.
-
-### 4. Verify it works
-
-Try this in Claude Desktop:
+4. **Test** by asking Claude:
 
 ```
 Create a Word document at /tmp/test.docx from this markdown:
@@ -90,6 +43,19 @@ This is my **first** Word document with *markdown*!
 ```
 
 You should get a properly formatted Word document at `/tmp/test.docx`!
+
+<details>
+<summary><b>Build from Source</b> (for contributors)</summary>
+
+```bash
+git clone <repository-url>
+cd mcp-server-docx
+nvm install && npm install && npm run build
+```
+
+Use `dist/index.js` in your Claude config instead of the downloaded bundle.
+
+</details>
 
 ## Features
 

@@ -1,0 +1,267 @@
+name: PR Release Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+jobs:
+  preview-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          # Get list of changed files in this PR
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Check if any changed files match release trigger paths
+          # Paths: src/** (excluding tests), package.json, package-lock.json
+          WILL_RELEASE="false"
+
+          while IFS= read -r file; do
+            # Check if file matches release trigger patterns
+            if [[ "$file" == src/* && "$file" != *"__tests__"* && "$file" != *".test.ts"* ]]; then
+              WILL_RELEASE="true"
+              break
+            elif [[ "$file" == "package.json" || "$file" == "package-lock.json" ]]; then
+              WILL_RELEASE="true"
+              break
+            fi
+          done <<< "$CHANGED_FILES"
+
+          echo "will_release=$WILL_RELEASE" >> $GITHUB_OUTPUT
+
+      - name: Get version from package.json
+        if: steps.changed-files.outputs.will_release == 'true'
+        id: get-version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if version was bumped
+        if: steps.changed-files.outputs.will_release == 'true'
+        id: version-bump-check
+        run: |
+          # Get version from base branch (main)
+          git fetch origin ${{ github.base_ref }}
+          BASE_VERSION=$(git show origin/${{ github.base_ref }}:package.json | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf-8')).version")
+          PR_VERSION="${{ steps.get-version.outputs.version }}"
+
+          echo "Base version (main): $BASE_VERSION"
+          echo "PR version: $PR_VERSION"
+
+          if [ "$BASE_VERSION" = "$PR_VERSION" ]; then
+            echo "bumped=false" >> $GITHUB_OUTPUT
+            echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "bumped=true" >> $GITHUB_OUTPUT
+            echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if version tag exists
+        if: steps.changed-files.outputs.will_release == 'true' && steps.version-bump-check.outputs.bumped == 'true'
+        id: tag-check
+        run: |
+          if git rev-parse "v${{ steps.get-version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get PR diff for release notes
+        if: steps.changed-files.outputs.will_release == 'true' && steps.version-bump-check.outputs.bumped == 'true' && steps.tag-check.outputs.exists == 'false'
+        id: pr-diff
+        run: |
+          # Get the diff for this PR (excluding package-lock.json and test files)
+          git fetch origin ${{ github.base_ref }}
+          git diff origin/${{ github.base_ref }}...HEAD -- ':(exclude)package-lock.json' ':(exclude)*.test.ts' > /tmp/pr-diff.txt
+
+          # Truncate if too large (OpenAI has token limits)
+          DIFF_SIZE=$(wc -c < /tmp/pr-diff.txt)
+          if [ "$DIFF_SIZE" -gt 50000 ]; then
+            echo "Diff too large ($DIFF_SIZE bytes), truncating..."
+            head -c 50000 /tmp/pr-diff.txt > /tmp/pr-diff-truncated.txt
+            mv /tmp/pr-diff-truncated.txt /tmp/pr-diff.txt
+          fi
+
+          echo "Generated PR diff for OpenAI analysis"
+
+      - name: Generate release notes preview with OpenAI
+        if: steps.changed-files.outputs.will_release == 'true' && steps.version-bump-check.outputs.bumped == 'true' && steps.tag-check.outputs.exists == 'false'
+        id: generate-notes
+        run: |
+          DIFF_CONTENT=$(cat /tmp/pr-diff.txt)
+
+          # Create JSON payload for OpenAI API
+          PAYLOAD=$(jq -n \
+            --arg diff "$DIFF_CONTENT" \
+            '{
+              model: "gpt-4o-mini",
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a technical writer generating release notes for an MCP server. Analyze the git diff and create concise, user-focused release notes. Focus on what changed for end users, not implementation details. Use markdown formatting. Be brief - 2-4 bullet points maximum. Do not include installation instructions."
+                },
+                {
+                  role: "user",
+                  content: ("Generate release notes for this pull request diff:\n\n" + $diff)
+                }
+              ],
+              temperature: 0.7,
+              max_tokens: 500
+            }')
+
+          # Call OpenAI API
+          RESPONSE=$(curl -s https://api.openai.com/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
+            -d "$PAYLOAD")
+
+          # Extract the generated notes
+          NOTES=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
+
+          # Save to output (escape for GitHub Actions)
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- release-preview -->'
+
+      - name: Create or update comment - Version not bumped (WARNING)
+        if: steps.changed-files.outputs.will_release == 'true' && steps.version-bump-check.outputs.bumped == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- release-preview -->
+            ## ⚠️ Version Not Bumped
+
+            **This PR modifies source files but the version in `package.json` was not updated.**
+
+            Current version: `${{ steps.version-bump-check.outputs.base_version }}` (unchanged)
+
+            ### 🔧 To create a new release:
+
+            Run one of these commands in your branch:
+
+            ```bash
+            npm version patch  # Bug fixes: 1.0.0 -> 1.0.1
+            npm version minor  # New features: 1.0.0 -> 1.1.0
+            npm version major  # Breaking changes: 1.0.0 -> 2.0.0
+            ```
+
+            Then commit and push:
+
+            ```bash
+            git add package.json package-lock.json
+            git commit -m "Bump version"
+            git push
+            ```
+
+            This comment will update with AI-generated release notes once the version is bumped.
+
+            ---
+
+            💡 **Note:** If you don't want to trigger a release (e.g., this is just a refactor), you can ignore this warning and merge as-is.
+
+      - name: Create or update comment - Will release
+        if: steps.changed-files.outputs.will_release == 'true' && steps.version-bump-check.outputs.bumped == 'true' && steps.tag-check.outputs.exists == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- release-preview -->
+            ## 🚀 Release Preview
+
+            Merging this PR will trigger a **new release: v${{ steps.get-version.outputs.version }}**
+
+            (Previous version: v${{ steps.version-bump-check.outputs.base_version }})
+
+            ### 📝 AI-Generated Release Notes
+
+            ${{ steps.generate-notes.outputs.notes }}
+
+            ---
+
+            *These release notes were automatically generated by analyzing the code changes in this PR.*
+
+      - name: Create or update comment - Will release (existing version)
+        if: steps.changed-files.outputs.will_release == 'true' && steps.version-bump-check.outputs.bumped == 'true' && steps.tag-check.outputs.exists == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- release-preview -->
+            ## ⚠️ Release Already Exists
+
+            Version **v${{ steps.get-version.outputs.version }}** already exists as a release.
+
+            ### Options:
+
+            **Option 1: Hotfix (overwrite existing release)**
+            If this is a hotfix for the existing release:
+            1. Delete the existing release and tag on GitHub
+            2. Merge this PR - it will recreate v${{ steps.get-version.outputs.version }}
+
+            **Option 2: New version (recommended)**
+            To create a new release instead:
+            ```bash
+            npm version patch  # Or minor/major
+            git add package.json package-lock.json
+            git commit -m "Bump version"
+            git push
+            ```
+
+            ---
+
+            💡 **Note:** Merging without changes will not trigger a release since the tag exists.
+
+      - name: Create or update comment - No release
+        if: steps.changed-files.outputs.will_release == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- release-preview -->
+            ## ℹ️ Release Preview
+
+            Merging this PR **will not trigger a release**.
+
+            The changed files do not match release trigger patterns:
+            - `src/**` (excluding tests)
+            - `package.json`
+            - `package-lock.json`
+
+            This is typically fine for documentation updates, configuration changes, or workflow modifications.
+
+            ---
+
+            *This comment will update automatically as you push more commits.*
