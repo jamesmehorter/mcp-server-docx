@@ -18,7 +18,8 @@
     "format:check": "prettier --check .",
     "format:fix": "prettier --write .",
     "type:check": "tsc --noEmit",
-    "ci": "npm run lint:check && npm run format:check && npm run type:check && npm run test:coverage"
+    "ci": "npm run lint:check && npm run format:check && npm run type:check && npm run test:coverage",
+    "fix": "npm run lint:fix && npm run format:fix"
   },
   "keywords": [
     "mcp",
@@ -41,6 +42,7 @@
     "@types/node": "^24.7.2",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
+    "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "esbuild": "^0.25.11",
     "eslint": "^9.37.0",

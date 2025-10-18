@@ -313,11 +313,13 @@ npm run build
 This project uses automated GitHub releases. See [RELEASING.md](./RELEASING.md) for details.
 
 **Quick summary:**
+
 1. Update version in `package.json` (e.g., `npm version patch`)
 2. Create PR and merge to `main`
 3. GitHub Actions automatically creates a release with the bundled `index.js`
 
 The release workflow only triggers on changes to:
+
 - `src/**` (excluding tests)
 - `package.json`
 - `package-lock.json`

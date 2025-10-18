@@ -147,10 +147,11 @@ function convertInlineContent(children: PhrasingContent[]): string {
           // Convert to *italic* markdown
           return `*${convertInlineContent(child.children)}*`;
 
-        case 'link':
+        case 'link': {
           // Convert to [text](url) markdown
           const linkText = convertInlineContent(child.children);
           return `[${linkText}](${child.url})`;
+        }
 
         case 'inlineCode':
           // Keep code as-is (could wrap in backticks if needed)

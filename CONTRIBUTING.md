@@ -79,11 +79,13 @@ npm run format:fix    # Format code with Prettier
 ### Local Development with Claude Desktop
 
 1. Build the project:
+
    ```bash
    npm run build
    ```
 
 2. Configure Claude Desktop to use your local build:
+
    ```json
    {
      "mcpServers": {
@@ -110,6 +112,7 @@ npm run format:fix    # Format code with Prettier
 ## Pull Request Process
 
 1. **Create a feature branch**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -120,6 +123,7 @@ npm run format:fix    # Format code with Prettier
    - Follow existing code style
 
 3. **Test your changes**
+
    ```bash
    npm test
    npm run type:check
@@ -128,12 +132,14 @@ npm run format:fix    # Format code with Prettier
    ```
 
 4. **Commit your changes**
+
    ```bash
    git add .
    git commit -m "Description of your changes"
    ```
 
 5. **Push to your fork**
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -159,6 +165,7 @@ npm run format:fix    # Format code with Prettier
 - Use descriptive test names
 
 Example:
+
 ```typescript
 test('should handle markdown links in paragraphs', async () => {
   // Test implementation

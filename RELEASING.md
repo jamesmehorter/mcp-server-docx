@@ -35,6 +35,7 @@ Create a PR and get it reviewed.
 ### Step 3: Merge to main
 
 When the PR is merged to `main`, GitHub Actions will:
+
 - Detect the new version in `package.json`
 - Run tests
 - Create the bundle
