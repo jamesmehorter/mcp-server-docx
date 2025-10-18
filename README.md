@@ -6,15 +6,15 @@ A fast, TypeScript-based MCP server for creating professional Word documents fro
 
 ## Quick Setup
 
-### 1. Build the project
+### Option 1: Download Pre-Built Bundle (Recommended)
 
-```bash
-cd /path/to/mcp-server-docx
-npm install
-npm run build
-```
+**No npm install needed!** Just download and run.
 
-### 2. Configure Claude Desktop
+1. **Download the latest release:**
+   - Go to [Releases](../../releases)
+   - Download `index.js` from the latest release
+
+2. **Configure Claude Desktop:**
 
 Edit your Claude Desktop configuration file:
 
@@ -26,15 +26,40 @@ Add this configuration:
 ```json
 {
   "mcpServers": {
-    "word-document-server": {
+    "mcp-server-docx": {
+      "command": "node",
+      "args": ["/path/to/downloaded/index.js"]
+    }
+  }
+}
+```
+
+**Note:** Replace `/path/to/downloaded/index.js` with the actual path where you saved the file.
+
+### Option 2: Build from Source
+
+For contributors or if you want to modify the code:
+
+```bash
+git clone <repository-url>
+cd mcp-server-docx
+nvm install  # Use the correct Node.js version from .nvmrc
+npm install
+npm run build
+```
+
+Then configure Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "mcp-server-docx": {
       "command": "node",
       "args": ["/absolute/path/to/mcp-server-docx/dist/index.js"]
     }
   }
 }
 ```
-
-**Note:** Replace `/absolute/path/to/mcp-server-docx` with your actual path.
 
 ### 3. Restart Claude Desktop
 
@@ -118,10 +143,11 @@ Key achievements:
 
 - `#` `##` `###` Headings (H1/H2 get bottom borders)
 - `**bold**` and `*italic*` inline formatting
+- `[text](url)` for clickable hyperlinks
 - `-` or `*` for bullet lists
 - `1.` `2.` for numbered lists
 - `> quote` for block quotes (rendered in italics)
-- `---` horizontal rules (skipped, used for visual separation)
+- `---` `***` `___` horizontal rules (rendered as lines)
 - Empty lines for spacing between sections
 
 **Behind the scenes:** Uses `create_document_from_markdown` tool
@@ -277,13 +303,28 @@ This gets automatically converted to proper Word formatting with bold and italic
 ```bash
 git clone <repository-url>
 cd mcp-server-docx
+nvm install  # Use the correct Node.js version from .nvmrc
 npm install
 npm run build
 ```
 
+### Creating a Release
+
+This project uses automated GitHub releases. See [RELEASING.md](./RELEASING.md) for details.
+
+**Quick summary:**
+1. Update version in `package.json` (e.g., `npm version patch`)
+2. Create PR and merge to `main`
+3. GitHub Actions automatically creates a release with the bundled `index.js`
+
+The release workflow only triggers on changes to:
+- `src/**` (excluding tests)
+- `package.json`
+- `package-lock.json`
+
 ### Testing
 
-Comprehensive test suite with 36 tests powered by **Vitest**:
+Comprehensive test suite with 54 tests powered by **Vitest**:
 
 ```bash
 npm test              # Run tests once
@@ -294,15 +335,18 @@ npm run test:ui       # Visual UI mode
 
 **Test coverage:**
 
-- Markdown parsing (headings, lists, block quotes, horizontal rules, inline formatting)
+- Markdown parsing (headings, lists, block quotes, horizontal rules, inline formatting, links)
 - Auto-session creation
 - Paragraph, heading, and list formatting
+- Link support in paragraphs, headings, and lists
+- Horizontal rule rendering
+- Color formatting for all element types
 - Batch document creation
 - Error handling
 - Complex multi-section documents
 - Spacing between elements
 
-**Performance:** All 36 tests complete in ~350ms
+**Performance:** All 54 tests complete in ~400ms
 
 ### Code Quality
 

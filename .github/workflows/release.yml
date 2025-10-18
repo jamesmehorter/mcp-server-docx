@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - '!src/__tests__/**'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Create bundle
+        run: npm run bundle
+
+      - name: Get version from package.json
+        id: package-version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Check if version tag exists
+        id: tag-check
+        run: |
+          if git rev-parse "v${{ steps.package-version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        if: steps.tag-check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.package-version.outputs.version }}
+          name: Release v${{ steps.package-version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            bundle/index.js
+          body: |
+            ## MCP Server Docx v${{ steps.package-version.outputs.version }}
+
+            ### Installation
+
+            Download `index.js` from the assets below and use it directly:
+
+            ```bash
+            # Download the bundle
+            curl -L -o mcp-server-docx.js https://github.com/${{ github.repository }}/releases/download/v${{ steps.package-version.outputs.version }}/index.js
+
+            # Make it executable
+            chmod +x mcp-server-docx.js
+
+            # Run it
+            node mcp-server-docx.js
+            ```
+
+            ### Claude Desktop Configuration
+
+            Add to your `claude_desktop_config.json`:
+
+            ```json
+            {
+              "mcpServers": {
+                "docx": {
+                  "command": "node",
+                  "args": ["/path/to/mcp-server-docx.js"]
+                }
+              }
+            }
+            ```
+
+            ### What's Changed
+
+            See release notes below for details.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip release (version already exists)
+        if: steps.tag-check.outputs.exists == 'true'
+        run: |
+          echo "Version v${{ steps.package-version.outputs.version }} already exists. Skipping release."
+          echo "To create a new release, update the version in package.json"
