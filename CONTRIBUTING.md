@@ -198,6 +198,71 @@ See [RELEASING.md](./RELEASING.md) for information about creating releases.
 
 **For contributors:** You typically don't need to worry about releases. Maintainers will handle version bumps and releases when merging PRs.
 
+## For Maintainers
+
+### Managing the OpenAI API Key
+
+This project uses OpenAI's API to automatically generate release notes from code changes when merging to `main`. The release workflow (`.github/workflows/release.yml`) requires an OpenAI API key stored as a repository secret.
+
+#### Creating an OpenAI API Key
+
+1. **Sign up or log in to OpenAI:**
+   - Go to [platform.openai.com](https://platform.openai.com)
+   - Create an account or sign in
+
+2. **Create an API key:**
+   - Navigate to [API Keys](https://platform.openai.com/api-keys)
+   - Click "Create new secret key"
+   - Configure the key with these settings:
+     - **Owned by:** You (default, recommended for personal projects)
+     - **Name:** `mcp-server-docx-releases` (or any descriptive name)
+     - **Project:** Select your project (or "Default project")
+     - **Permissions:**
+       - **"All"** (recommended - simplest option)
+       - **"Restricted"** (if you want fine-grained control):
+         - **Model capabilities:** Write ✅ (required for `/v1/chat/completions`)
+         - All other permissions: None (not needed for release notes)
+   - Click "Create secret key"
+   - **Important:** Copy the key immediately - you won't be able to see it again
+
+3. **Set up billing (required):**
+   - Go to [Billing Settings](https://platform.openai.com/account/billing)
+   - Add a payment method
+   - The workflow uses `gpt-4o-mini` which is very cost-effective (~$0.01 per release)
+
+#### Adding the API Key to GitHub
+
+1. **Navigate to repository secrets:**
+   - Go to: `https://github.com/jamesmehorter/mcp-server-docx/settings/secrets/actions`
+   - Or: Repository Settings → Secrets and variables → Actions
+
+2. **Add the secret:**
+   - Click "New repository secret"
+   - **Name:** `OPENAI_API_KEY` (must be exact)
+   - **Value:** Paste your OpenAI API key
+   - Click "Add secret"
+
+3. **Verify it's working:**
+   - The next time a PR is merged to `main`, check the Actions tab
+   - The "Generate release notes with OpenAI" step should succeed
+   - The release notes should appear automatically generated
+
+#### Security Notes
+
+- **Never commit the API key** to the repository
+- The key is only accessible to GitHub Actions workflows
+- Only repository admins can view/edit secrets
+- Rotate the key periodically for security
+- Monitor OpenAI usage at [platform.openai.com/usage](https://platform.openai.com/usage)
+
+#### If the API Key Expires or Fails
+
+If the release workflow fails with an authentication error:
+
+1. Generate a new API key following the steps above
+2. Update the `OPENAI_API_KEY` secret in GitHub
+3. Re-run the failed workflow from the Actions tab
+
 ## Questions or Problems?
 
 - Check existing [issues](../../issues)
