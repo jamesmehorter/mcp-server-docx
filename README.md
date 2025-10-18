@@ -39,6 +39,7 @@ Add this configuration:
 ```
 
 **Note:** Replace `/Users/YOUR_USERNAME/mcp-servers/docx/index.js` with the actual path where you saved the file.
+
 - macOS/Linux: Use full path like `/Users/yourname/mcp-servers/docx/index.js` or `~/mcp-servers/docx/index.js`
 - Windows: Use full path like `C:\\Users\\yourname\\mcp-servers\\docx\\index.js`
 
