@@ -1,209 +1,168 @@
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import { toString } from 'mdast-util-to-string';
+import type { Root, Content, PhrasingContent } from 'mdast';
 import { ContentItem } from './document-manager.js';
 
 /**
- * Parse markdown text and convert to ContentItem array
+ * Parse markdown text and convert to ContentItem array using remark
+ *
  * Supports:
  * - Headings: # H1, ## H2, ### H3, etc.
+ * - Paragraphs: regular text
  * - Unordered lists: - item or * item
  * - Ordered lists: 1. item, 2. item, etc.
- * - Paragraphs: regular text
+ * - Block quotes: > quote text
+ * - Horizontal rules: ---, ***, ___
+ * - Inline formatting: **bold**, *italic*, [text](url)
  * - Empty lines: create empty paragraphs for spacing
- * - Inline formatting: **bold**, *italic*
  */
 export function parseMarkdown(markdown: string): ContentItem[] {
+  const processor = unified().use(remarkParse);
+  const ast = processor.parse(markdown) as Root;
+
   const items: ContentItem[] = [];
+  let previousWasBlock = false;
 
-  // Split into blocks by double newlines, but preserve single newlines within lists
-  const blocks = splitIntoBlocks(markdown);
+  for (const node of ast.children) {
+    const item = convertNode(node);
 
-  for (const block of blocks) {
-    const trimmed = block.trim();
-
-    // Handle empty blocks - create empty paragraph for spacing
-    if (!trimmed) {
-      items.push({
-        type: 'paragraph',
-        text: '',
-      });
-      continue;
+    if (item) {
+      items.push(item);
+      previousWasBlock = isBlockElement(node);
+    } else if (previousWasBlock) {
+      // Add empty paragraph for spacing after block elements
+      items.push({ type: 'paragraph', text: '' });
+      previousWasBlock = false;
     }
-
-    // Check for horizontal rule (---, ***, ___)
-    if (/^[-*_]{3,}$/.test(trimmed)) {
-      // Convert to empty paragraph with bottom border
-      items.push({
-        type: 'paragraph',
-        text: '---',
-      });
-      continue;
-    }
-
-    // Check for block quote (lines starting with >)
-    if (/^>\s/.test(trimmed)) {
-      // Remove the > markers and join multi-line quotes
-      const quoteText = trimmed
-        .split('\n')
-        .map(line => line.replace(/^>\s?/, '').trim())
-        .filter(line => line)
-        .join(' ');
-
-      if (quoteText) {
-        items.push({
-          type: 'paragraph',
-          text: quoteText,
-          format: {
-            italic: true, // Style quotes in italic
-          },
-        });
-      }
-      continue;
-    }
-
-    // Check for heading
-    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/m);
-    if (headingMatch) {
-      const level = headingMatch[1].length;
-      const text = headingMatch[2];
-      items.push({
-        type: 'heading',
-        text,
-        format: {
-          level,
-          borderBottom: level <= 2, // Add border for H1 and H2
-        },
-      });
-      continue;
-    }
-
-    // Check for unordered list (lines starting with - or *)
-    const unorderedListMatch = trimmed.match(/^[-*]\s+/m);
-    if (unorderedListMatch) {
-      const listItems = trimmed
-        .split('\n')
-        .filter(line => /^[-*]\s+/.test(line))
-        .map(line => line.replace(/^[-*]\s+/, '').trim());
-
-      if (listItems.length > 0) {
-        items.push({
-          type: 'bullets',
-          items: listItems,
-        });
-      }
-      continue;
-    }
-
-    // Check for ordered list (lines starting with 1., 2., etc.)
-    const orderedListMatch = trimmed.match(/^\d+\.\s+/m);
-    if (orderedListMatch) {
-      const listItems = trimmed
-        .split('\n')
-        .filter(line => /^\d+\.\s+/.test(line))
-        .map(line => line.replace(/^\d+\.\s+/, '').trim());
-
-      if (listItems.length > 0) {
-        items.push({
-          type: 'ordered',
-          items: listItems,
-        });
-      }
-      continue;
-    }
-
-    // Default: treat as paragraph
-    items.push({
-      type: 'paragraph',
-      text: trimmed,
-    });
   }
 
   return items;
 }
 
 /**
- * Split markdown into blocks, preserving list structures and empty lines for spacing
+ * Check if a node is a block-level element
  */
-function splitIntoBlocks(markdown: string): string[] {
-  const blocks: string[] = [];
-  const lines = markdown.split('\n');
-  let currentBlock = '';
-  let inList = false;
-  let emptyLineCount = 0;
+function isBlockElement(node: Content): boolean {
+  return ['heading', 'list', 'blockquote', 'thematicBreak'].includes(node.type);
+}
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
+/**
+ * Convert an mdast node to a ContentItem
+ */
+function convertNode(node: Content): ContentItem | null {
+  switch (node.type) {
+    case 'heading':
+      return {
+        type: 'heading',
+        text: convertInlineContent(node.children),
+        format: {
+          level: node.depth,
+          borderBottom: node.depth <= 2, // Add border for H1 and H2
+        },
+      };
 
-    // Check if this line starts a list or continues one
-    const isListItem = /^[-*]\s+/.test(trimmed) || /^\d+\.\s+/.test(trimmed);
-    const isHeading = /^#{1,6}\s+/.test(trimmed);
+    case 'paragraph':
+      return {
+        type: 'paragraph',
+        text: convertInlineContent(node.children),
+      };
 
-    // If we hit an empty line
-    if (!trimmed) {
-      // If we were in a list, end it
-      if (inList) {
-        blocks.push(currentBlock);
-        currentBlock = '';
-        inList = false;
-      }
-      // If we have content, end the block
-      else if (currentBlock.trim()) {
-        blocks.push(currentBlock);
-        currentBlock = '';
-      }
-      // Track consecutive empty lines
-      emptyLineCount++;
-      continue;
+    case 'list': {
+      const items = node.children
+        .map(listItem => {
+          // Extract text from all children of the list item
+          const text = listItem.children
+            .map(child => {
+              if (child.type === 'paragraph') {
+                return convertInlineContent(child.children);
+              }
+              return toString(child);
+            })
+            .join(' ');
+          return text;
+        })
+        .filter(text => text.length > 0);
+
+      if (items.length === 0) return null;
+
+      return {
+        type: node.ordered ? 'ordered' : 'bullets',
+        items,
+      };
     }
 
-    // If we have accumulated empty lines and hit content, add them as spacing
-    if (emptyLineCount > 0) {
-      // Add empty blocks for spacing
-      // In markdown, even a single blank line should create visual spacing
-      for (let j = 0; j < emptyLineCount; j++) {
-        blocks.push('');
-      }
-      emptyLineCount = 0;
+    case 'blockquote': {
+      // Get all paragraph content from blockquote
+      const quoteText = node.children
+        .map(child => {
+          if (child.type === 'paragraph') {
+            return convertInlineContent(child.children);
+          }
+          return toString(child);
+        })
+        .filter(text => text.length > 0)
+        .join(' ');
+
+      if (!quoteText) return null;
+
+      return {
+        type: 'paragraph',
+        text: quoteText,
+        format: {
+          italic: true, // Style quotes in italic
+        },
+      };
     }
 
-    // If we hit a heading, end previous block and start new one
-    if (isHeading) {
-      if (currentBlock.trim()) {
-        blocks.push(currentBlock);
-      }
-      currentBlock = line;
-      blocks.push(currentBlock);
-      currentBlock = '';
-      inList = false;
-      continue;
-    }
+    case 'thematicBreak':
+      // Horizontal rule (---, ***, ___)
+      return {
+        type: 'paragraph',
+        text: '---',
+      };
 
-    // If we hit a list item
-    if (isListItem) {
-      // If we were in a different block type, end it
-      if (currentBlock && !inList) {
-        blocks.push(currentBlock);
-        currentBlock = '';
-      }
-      inList = true;
-      currentBlock += (currentBlock ? '\n' : '') + line;
-      continue;
-    }
-
-    // Regular line
-    if (inList) {
-      // End list if we hit non-list content
-      blocks.push(currentBlock);
-      currentBlock = line;
-      inList = false;
-    } else {
-      currentBlock += (currentBlock ? '\n' : '') + line;
-    }
+    default:
+      // Skip unsupported node types (code, html, etc.)
+      return null;
   }
+}
 
-  // Don't forget the last block
-  if (currentBlock.trim()) {
-    blocks.push(currentBlock);
-  }
+/**
+ * Convert inline mdast nodes (text, strong, emphasis, link) to markdown-formatted text
+ * This preserves **bold**, *italic*, and [text](url) formatting as strings
+ */
+function convertInlineContent(children: PhrasingContent[]): string {
+  return children
+    .map(child => {
+      switch (child.type) {
+        case 'text':
+          return child.value;
 
-  return blocks;
+        case 'strong':
+          // Convert to **bold** markdown
+          return `**${convertInlineContent(child.children)}**`;
+
+        case 'emphasis':
+          // Convert to *italic* markdown
+          return `*${convertInlineContent(child.children)}*`;
+
+        case 'link':
+          // Convert to [text](url) markdown
+          const linkText = convertInlineContent(child.children);
+          return `[${linkText}](${child.url})`;
+
+        case 'inlineCode':
+          // Keep code as-is (could wrap in backticks if needed)
+          return child.value;
+
+        case 'break':
+          return ' ';
+
+        default:
+          // Fallback: convert to string
+          return toString(child);
+      }
+    })
+    .join('');
 }

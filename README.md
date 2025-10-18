@@ -380,12 +380,19 @@ James Mehorter
 
 ## Acknowledgments
 
-This project is built on the excellent [docx](https://docx.js.org) library by Dolan Miu.
+This project is built on two excellent open source libraries:
+
+### Document Generation: [docx](https://docx.js.org)
 
 **[docx.js.org](https://docx.js.org)** | **[GitHub](https://github.com/dolanmiu/docx)** - A powerful library for generating Word documents (.docx files) in JavaScript/TypeScript. This MCP server wouldn't be possible without the solid foundation that docx provides for creating and manipulating Office Open XML documents.
+
+### Markdown Parsing: [remark](https://remark.js.org)
+
+**[remark.js.org](https://remark.js.org)** | **[GitHub](https://github.com/remarkjs/remark)** - A robust markdown processor powered by plugins, part of the unified collective. Remark's standards-compliant parsing ensures accurate conversion of markdown to Word documents.
 
 Thanks to:
 
 - **Dolan Miu** and all contributors to the [docx library](https://github.com/dolanmiu/docx)
+- **Titus Wormer** and the [unified collective](https://unifiedjs.com/) for [remark](https://github.com/remarkjs/remark)
 - The **Anthropic team** for building the Model Context Protocol and Claude Code
 - The **open source community** for making tools like this possible
